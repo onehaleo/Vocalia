@@ -1,4 +1,5 @@
 import type { User } from "@supabase/supabase-js";
+import { ensureProfileRow } from "@/lib/ensure-profile";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
@@ -28,5 +29,30 @@ export async function getProfile(): Promise<{
     .eq("id", user.id)
     .maybeSingle();
 
-  return { user, profile: profileRaw as ProfileRow | null };
+  let profile = profileRaw as ProfileRow | null;
+
+  if (!profile) {
+    const fullName =
+      typeof user.user_metadata?.full_name === "string"
+        ? user.user_metadata.full_name
+        : typeof user.user_metadata?.name === "string"
+          ? user.user_metadata.name
+          : null;
+
+    const repaired = await ensureProfileRow(user.id, {
+      email: user.email ?? null,
+      full_name: fullName,
+    });
+
+    if (repaired.ok) {
+      const { data: again } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+      profile = again as ProfileRow | null;
+    }
+  }
+
+  return { user, profile };
 }

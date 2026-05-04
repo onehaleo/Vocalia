@@ -1,19 +1,13 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getAppUrl } from "@/lib/env";
+import { safeInternalPath } from "@/lib/internal-path";
 import { createClient } from "@/utils/supabase/server";
-
-function safeNext(next: string | null) {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) {
-    return "/dashboard";
-  }
-  return next;
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = safeNext(searchParams.get("next"));
+  const next = safeInternalPath(searchParams.get("next"));
 
   if (code) {
     const cookieStore = await cookies();

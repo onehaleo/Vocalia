@@ -1,7 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/utils/supabase/middleware";
 
-const protectedPrefixes = ["/dashboard", "/levels", "/lessons"];
+const protectedPrefixes = [
+  "/dashboard",
+  "/levels",
+  "/lessons",
+  "/learn",
+  "/practice",
+  "/review",
+  "/dictionary",
+  "/progress",
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

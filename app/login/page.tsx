@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
 import { Card } from "@/components/ui/card";
+import { firstSearchParam } from "@/lib/search-params";
 
 function LoginFallback() {
   return (
@@ -16,16 +17,17 @@ function LoginFallback() {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string | string[] }>;
 }) {
   const params = await searchParams;
+  const authError = firstSearchParam(params.error);
 
   return (
     <main className="mx-auto max-w-lg px-4 py-12 sm:px-6 sm:py-16">
       <Suspense fallback={<LoginFallback />}>
         <LoginForm />
       </Suspense>
-      {params.error ? (
+      {authError ? (
         <p className="mx-auto mt-4 max-w-md text-center text-sm text-red-600" role="alert">
           Something went wrong confirming your email. Try the link again or log in manually.
         </p>

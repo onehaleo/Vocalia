@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import type { LessonRow, LevelRow } from "@/types/curriculum";
+import { DEFAULT_COURSE_SLUG } from "@/lib/constants";
+import type { LevelRow } from "@/types/curriculum";
 
 export type LevelCardModel = {
   id: string;
@@ -16,9 +17,18 @@ export async function getLevelCardsForUser(
 ): Promise<LevelCardModel[]> {
   const supabase = await createClient();
 
+  const { data: courseRaw } = await supabase
+    .from("courses")
+    .select("id")
+    .eq("slug", DEFAULT_COURSE_SLUG)
+    .maybeSingle();
+  const courseId = (courseRaw as { id: string } | null)?.id;
+  if (!courseId) return [];
+
   const { data: levelsRaw, error: levelsError } = await supabase
     .from("levels")
     .select("*")
+    .eq("course_id", courseId)
     .order("sort_order", { ascending: true });
 
   const levels = (levelsRaw ?? []) as LevelRow[];
@@ -40,10 +50,14 @@ export async function getLevelCardsForUser(
 
   const { data: lessonsRaw } = await supabase
     .from("lessons")
-    .select("id, level_id")
+    .select("id, module_id, modules!inner(level_id)")
     .eq("is_published", true);
 
-  const lessons = (lessonsRaw ?? []) as Pick<LessonRow, "id" | "level_id">[];
+  const lessons = (lessonsRaw ?? []) as {
+    id: string;
+    module_id: string;
+    modules: { level_id: string };
+  }[];
 
   const { data: progressRowsRaw } = await supabase
     .from("user_lesson_progress")
@@ -60,7 +74,8 @@ export async function getLevelCardsForUser(
     countsByLevel.set(lv.id, { total: 0, done: 0 });
   }
   for (const les of lessons) {
-    const cur = countsByLevel.get(les.level_id);
+    const levelId = les.modules.level_id;
+    const cur = countsByLevel.get(levelId);
     if (!cur) continue;
     cur.total += 1;
     if (completedSet.has(les.id)) cur.done += 1;
@@ -86,27 +101,48 @@ export async function getProgressSummary(userId: string, hasPaidAccess: boolean)
 
   const supabase = await createClient();
 
-  const [{ count: totalLessons }, { count: completedLessons }, { count: masteredPhrases }] =
-    await Promise.all([
-      supabase
-        .from("lessons")
-        .select("*", { count: "exact", head: true })
-        .eq("is_published", true),
-      supabase
-        .from("user_lesson_progress")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("status", "completed"),
-      supabase
-        .from("user_phrase_progress")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("status", "mastered"),
-    ]);
+  const { data: courseRaw } = await supabase
+    .from("courses")
+    .select("id")
+    .eq("slug", DEFAULT_COURSE_SLUG)
+    .maybeSingle();
+  const courseId = (courseRaw as { id: string } | null)?.id;
+
+  let totalLessons = 0;
+  if (courseId) {
+    const { count } = await supabase
+      .from("lessons")
+      .select("id, modules!inner(level_id, levels!inner(course_id))", {
+        count: "exact",
+        head: true,
+      })
+      .eq("is_published", true)
+      .eq("modules.levels.course_id", courseId);
+    totalLessons = count ?? 0;
+  } else {
+    const { count } = await supabase
+      .from("lessons")
+      .select("*", { count: "exact", head: true })
+      .eq("is_published", true);
+    totalLessons = count ?? 0;
+  }
+
+  const [{ count: completedLessons }, { count: masteredPhrases }] = await Promise.all([
+    supabase
+      .from("user_lesson_progress")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "completed"),
+    supabase
+      .from("user_phrase_progress")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "mastered"),
+  ]);
 
   return {
     completedLessons: completedLessons ?? 0,
-    totalLessons: totalLessons ?? 0,
+    totalLessons,
     masteredPhrases: masteredPhrases ?? 0,
   };
 }

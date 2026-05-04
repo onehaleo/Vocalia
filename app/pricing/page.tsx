@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { SiteFooter } from "@/components/marketing/site-footer";
+import { CheckoutButton } from "@/components/marketing/checkout-button";
 import { LinkButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getUser } from "@/lib/auth";
-import { CheckoutButton } from "@/components/marketing/checkout-button";
+import { firstSearchParam } from "@/lib/search-params";
 
 const errorCopy: Record<string, { title: string; body: string }> = {
   missing_price_id: {
@@ -32,17 +33,24 @@ export default async function PricingPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    checkout?: string;
-    code?: string;
-    detail?: string;
+    checkout?: string | string[];
+    code?: string | string[];
+    detail?: string | string[];
+    from?: string | string[];
   }>;
 }) {
   const user = await getUser();
   const params = await searchParams;
-  const cancelled = params.checkout === "cancel";
-  const errored = params.checkout === "error";
-  const errInfo = params.code ? errorCopy[params.code] : null;
-  const detail = params.detail ? decodeURIComponent(params.detail) : null;
+  const checkout = firstSearchParam(params.checkout);
+  const code = firstSearchParam(params.code);
+  const detailRaw = firstSearchParam(params.detail);
+  const from = firstSearchParam(params.from);
+
+  const cancelled = checkout === "cancel";
+  const errored = checkout === "error";
+  const errInfo = code ? errorCopy[code] : null;
+  const detail = detailRaw ? decodeURIComponent(detailRaw) : null;
+  const blockedPaidContent = from === "paid-content";
 
   return (
     <>
@@ -51,6 +59,13 @@ export default async function PricingPage({
         <p className="mt-3 text-[var(--color-ink-muted)]">
           MVP access is a one-time checkout. Subscriptions can reuse the same Stripe customer later.
         </p>
+
+        {blockedPaidContent ? (
+          <p className="mt-6 rounded-xl border border-[var(--color-accent)]/25 bg-[var(--color-accent-muted)]/35 px-4 py-3 text-sm text-[var(--color-ink)]">
+            That area is for paying learners. Complete checkout below (while logged into the same account
+            you used to start the link), then open your level or lesson again from the dashboard.
+          </p>
+        ) : null}
 
         {cancelled ? (
           <p className="mt-6 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950">
@@ -92,12 +107,15 @@ export default async function PricingPage({
                 <p className="text-sm text-[var(--color-ink-muted)]">
                   Create an account first — checkout attaches to your Vocalia profile.
                 </p>
-                <LinkButton href="/signup" variant="primary">
+                <LinkButton href="/signup?next=/pricing" variant="primary">
                   Sign up to purchase
                 </LinkButton>
                 <p className="text-sm text-[var(--color-ink-muted)]">
                   Already registered?{" "}
-                  <Link href="/login" className="font-medium text-[var(--color-accent)] hover:underline">
+                  <Link
+                    href="/login?next=/pricing"
+                    className="font-medium text-[var(--color-accent)] hover:underline"
+                  >
                     Log in
                   </Link>
                 </p>

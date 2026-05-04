@@ -36,55 +36,128 @@ export interface Database {
         };
         Relationships: EmptyRel;
       };
+      languages: {
+        Row: { id: string; code: string; name: string; created_at: string };
+        Insert: { id?: string; code: string; name: string; created_at?: string };
+        Update: { code?: string; name?: string; created_at?: string };
+        Relationships: EmptyRel;
+      };
+      courses: {
+        Row: {
+          id: string;
+          language_id: string;
+          slug: string;
+          title: string;
+          description: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          language_id: string;
+          slug: string;
+          title: string;
+          description?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          language_id?: string;
+          slug?: string;
+          title?: string;
+          description?: string | null;
+          created_at?: string;
+        };
+        Relationships: EmptyRel;
+      };
       levels: {
         Row: {
           id: string;
+          course_id: string;
           code: string;
           title: string;
+          path_label: string | null;
           description: string | null;
           sort_order: number;
           lesson_count: number;
         };
         Insert: {
           id?: string;
+          course_id: string;
           code: string;
           title: string;
+          path_label?: string | null;
           description?: string | null;
           sort_order: number;
           lesson_count?: number;
         };
         Update: {
+          course_id?: string;
           code?: string;
           title?: string;
+          path_label?: string | null;
           description?: string | null;
           sort_order?: number;
           lesson_count?: number;
         };
         Relationships: EmptyRel;
       };
-      lessons: {
+      modules: {
         Row: {
           id: string;
           level_id: string;
+          slug: string;
           title: string;
           description: string | null;
+          sort_order: number;
+          coming_soon: boolean;
+        };
+        Insert: {
+          id?: string;
+          level_id: string;
+          slug: string;
+          title: string;
+          description?: string | null;
+          sort_order: number;
+          coming_soon?: boolean;
+        };
+        Update: {
+          level_id?: string;
+          slug?: string;
+          title?: string;
+          description?: string | null;
+          sort_order?: number;
+          coming_soon?: boolean;
+        };
+        Relationships: EmptyRel;
+      };
+      lessons: {
+        Row: {
+          id: string;
+          module_id: string;
+          slug: string;
+          title: string;
+          description: string | null;
+          learn_excerpt: string | null;
           sort_order: number;
           is_published: boolean;
           created_at: string;
         };
         Insert: {
           id?: string;
-          level_id: string;
+          module_id: string;
+          slug: string;
           title: string;
           description?: string | null;
+          learn_excerpt?: string | null;
           sort_order: number;
           is_published?: boolean;
           created_at?: string;
         };
         Update: {
-          level_id?: string;
+          module_id?: string;
+          slug?: string;
           title?: string;
           description?: string | null;
+          learn_excerpt?: string | null;
           sort_order?: number;
           is_published?: boolean;
         };
@@ -100,7 +173,11 @@ export interface Database {
           syllable_breakdown: string | null;
           pronunciation_notes: string | null;
           common_mistakes: string | null;
+          tags: string[] | null;
           audio_url: string | null;
+          audio_slow_url: string | null;
+          audio_natural_url: string | null;
+          audio_context_url: string | null;
           sort_order: number;
           created_at: string;
         };
@@ -113,7 +190,11 @@ export interface Database {
           syllable_breakdown?: string | null;
           pronunciation_notes?: string | null;
           common_mistakes?: string | null;
+          tags?: string[] | null;
           audio_url?: string | null;
+          audio_slow_url?: string | null;
+          audio_natural_url?: string | null;
+          audio_context_url?: string | null;
           sort_order: number;
           created_at?: string;
         };
@@ -125,7 +206,69 @@ export interface Database {
           syllable_breakdown?: string | null;
           pronunciation_notes?: string | null;
           common_mistakes?: string | null;
+          tags?: string[] | null;
           audio_url?: string | null;
+          audio_slow_url?: string | null;
+          audio_natural_url?: string | null;
+          audio_context_url?: string | null;
+          sort_order?: number;
+        };
+        Relationships: EmptyRel;
+      };
+      activities: {
+        Row: {
+          id: string;
+          lesson_id: string;
+          activity_type: string;
+          title: string;
+          skill: string;
+          config: Json;
+          sort_order: number;
+        };
+        Insert: {
+          id?: string;
+          lesson_id: string;
+          activity_type: string;
+          title: string;
+          skill?: string;
+          config?: Json;
+          sort_order: number;
+        };
+        Update: {
+          lesson_id?: string;
+          activity_type?: string;
+          title?: string;
+          skill?: string;
+          config?: Json;
+          sort_order?: number;
+        };
+        Relationships: EmptyRel;
+      };
+      sound_lessons: {
+        Row: {
+          id: string;
+          course_id: string;
+          slug: string;
+          title: string;
+          summary: string | null;
+          body: Json;
+          sort_order: number;
+        };
+        Insert: {
+          id?: string;
+          course_id: string;
+          slug: string;
+          title: string;
+          summary?: string | null;
+          body?: Json;
+          sort_order: number;
+        };
+        Update: {
+          course_id?: string;
+          slug?: string;
+          title?: string;
+          summary?: string | null;
+          body?: Json;
           sort_order?: number;
         };
         Relationships: EmptyRel;
@@ -161,6 +304,8 @@ export interface Database {
           phrase_id: string;
           status: string;
           practice_count: number;
+          is_saved: boolean;
+          speaking_confidence: number | null;
           last_practiced_at: string | null;
           updated_at: string;
         };
@@ -170,13 +315,67 @@ export interface Database {
           phrase_id: string;
           status?: string;
           practice_count?: number;
+          is_saved?: boolean;
+          speaking_confidence?: number | null;
           last_practiced_at?: string | null;
           updated_at?: string;
         };
         Update: {
           status?: string;
           practice_count?: number;
+          is_saved?: boolean;
+          speaking_confidence?: number | null;
           last_practiced_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: EmptyRel;
+      };
+      user_activity_attempts: {
+        Row: {
+          id: string;
+          user_id: string;
+          activity_id: string;
+          correct: boolean;
+          response: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          activity_id: string;
+          correct: boolean;
+          response?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          activity_id?: string;
+          correct?: boolean;
+          response?: Json | null;
+          created_at?: string;
+        };
+        Relationships: EmptyRel;
+      };
+      user_skill_progress: {
+        Row: {
+          id: string;
+          user_id: string;
+          skill: string;
+          activities_completed: number;
+          activities_available: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          skill: string;
+          activities_completed?: number;
+          activities_available?: number;
+          updated_at?: string;
+        };
+        Update: {
+          skill?: string;
+          activities_completed?: number;
+          activities_available?: number;
           updated_at?: string;
         };
         Relationships: EmptyRel;

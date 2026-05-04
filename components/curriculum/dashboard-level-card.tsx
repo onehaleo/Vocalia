@@ -64,7 +64,7 @@ export function DashboardLevelCard({
             Get access
           </LinkButton>
         ) : (
-          <LinkButton href={`/levels/${level.code}`} variant="primary" className="w-full sm:w-auto">
+          <LinkButton href={`/learn/${level.code}`} variant="primary" className="w-full sm:w-auto">
             Open level
           </LinkButton>
         )}

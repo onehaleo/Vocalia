@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { safeInternalPath } from "@/lib/internal-path";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,7 +11,7 @@ import { Card } from "@/components/ui/card";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = safeInternalPath(searchParams.get("next"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +30,7 @@ export function LoginForm() {
         setError(signError.message);
         return;
       }
-      router.push(next.startsWith("/") ? next : "/dashboard");
+      router.push(safeInternalPath(next));
       router.refresh();
     });
   }
@@ -82,7 +83,10 @@ export function LoginForm() {
       </form>
       <p className="mt-4 text-center text-sm text-[var(--color-ink-muted)]">
         No account?{" "}
-        <Link href="/signup" className="font-medium text-[var(--color-accent)] hover:underline">
+        <Link
+          href={next === "/dashboard" ? "/signup" : `/signup?next=${encodeURIComponent(next)}`}
+          className="font-medium text-[var(--color-accent)] hover:underline"
+        >
           Sign up
         </Link>
       </p>

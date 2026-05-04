@@ -2,16 +2,17 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import type { LessonRevalidatePaths } from "@/lib/progress";
 import { markLessonComplete } from "@/lib/progress";
 import { Button } from "@/components/ui/button";
 
 export function LessonStickyFooter({
   lessonId,
-  levelCode,
+  paths,
   alreadyCompleted,
 }: {
   lessonId: string;
-  levelCode: string;
+  paths: LessonRevalidatePaths;
   alreadyCompleted: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +23,7 @@ export function LessonStickyFooter({
     setError(null);
     startTransition(async () => {
       try {
-        await markLessonComplete(lessonId, levelCode);
+        await markLessonComplete(lessonId, paths);
         setDone(true);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Could not save progress.");
@@ -30,15 +31,17 @@ export function LessonStickyFooter({
     });
   }
 
+  const backHref = `/learn/${paths.levelCode}`;
+
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 p-4 md:pointer-events-auto md:static md:z-0 md:p-0">
       <div className="pointer-events-auto mx-auto max-w-3xl rounded-2xl border border-black/[0.08] bg-white/95 p-4 shadow-lg shadow-black/10 backdrop-blur md:border-0 md:bg-transparent md:p-0 md:shadow-none">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Link
-            href={`/levels/${levelCode}`}
+            href={backHref}
             className="text-center text-sm font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] sm:text-left"
           >
-            ← Back to level {levelCode}
+            ← Back to {paths.levelCode} path
           </Link>
           {done ? (
             <p className="text-center text-sm font-medium text-[var(--color-accent)] sm:text-right">

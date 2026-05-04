@@ -1,6 +1,6 @@
 # Vocalia
 
-Vocalia is a **mobile-first** web app for **adult learners** who want clearer **European Portuguese** pronunciation and everyday phrasing. The first MVP ships one paid curriculum track (A1–B2 seed content), **Supabase** for auth and data, and **Stripe Checkout** for a **one-time** purchase (code is structured so **subscriptions** can be added later).
+Vocalia is a **mobile-first** web app for **first-time language learners** who want **European Portuguese** vocabulary, light grammar patterns, and real-life phrases with **pronunciation support** from day one. The MVP ships one guided **course** (CEFR-style path A1–B2 with modules and lessons), **Supabase** for auth and data, and **Stripe Checkout** for a **one-time** purchase (code is structured so **subscriptions** can be added later). The UI stays **calm and adult** — no gamification layer in this release.
 
 ## Tech stack
 
@@ -14,15 +14,36 @@ Optional — Supabase Agent Skills for Cursor: `npx skills add supabase/agent-sk
 
 - **Stripe** — Checkout (`payment` mode) + webhooks to flip `profiles.has_paid_access`
 
-## Project overview
+## App structure (routes)
 
-| Area | Description |
-|------|-------------|
-| Marketing | Landing (`/`), pricing (`/pricing`), FAQ, CTAs |
-| Auth | Email/password via Supabase; protected `/dashboard`, `/levels/*`, `/lessons/*` |
-| Paywall | Unpaid users see level cards with **lesson counts** and a **locked** state; paid users load full lessons/phrases under RLS |
-| Curriculum | CEFR levels → lessons → phrases with phonetic scaffolding and progress tables |
-| Progress | Server actions in `lib/progress.ts` — phrase status, practice counts, lesson completion |
+| Route | Description |
+|-------|-------------|
+| `/` | Marketing landing |
+| `/pricing`, `/login`, `/signup` | Checkout funnel and auth |
+| `/dashboard` | Account snapshot, checkout sync, level cards linking into **Learn** |
+| **`/learn`** | Course home — CEFR levels, `path_label`, modules, lesson counts, progress bars |
+| **`/learn/[levelCode]`** | Level path — modules and lessons (published lesson titles visible when signed in) |
+| **`/learn/[levelCode]/[moduleSlug]/[lessonSlug]`** | Lesson experience — Learn / Listen / Repeat / guided activities / Speak / Review (**paid**; phrases + activities under RLS) |
+| **`/practice`** | Skill modes + phrase pool filtered by `?skill=` query |
+| **`/practice/pronunciation`** | **Pronunciation lab** — `sound_lessons` content (European Portuguese seed topics) |
+| **`/review`** | Personal review queue with filters (level, skill, lesson, status) |
+| **`/dictionary`** | Searchable phrase list (`?q=`) from course phrases |
+| **`/progress`** | Progress dashboard — lessons, levels, skills (from activity attempts), phrase stats |
+| `/levels/[levelCode]`, `/lessons/[lessonId]` | **Legacy redirects** → `/learn/...` canonical URLs |
+
+**Navigation:** Signed-in users get **Learn · Practice · Review · Dictionary · Progress** in the header plus **Dashboard**.
+
+**Key code:**
+
+- **`lib/learning.ts`** — Course path, lesson bundles, dictionary, review list, practice pool, progress aggregates.
+- **`lib/progress.ts`** — Server actions: phrase statuses (`needs_practice`, `practicing`, `mastered`), save toggle, speaking self-rating, lesson completion, activity attempts.
+- **`lib/dashboard.ts`** — Dashboard level cards (counts lessons via `modules` → `levels`).
+- **`lib/constants.ts`** — Default course slug `european-portuguese-beginners`.
+- **`components/learning/`** — `ActivityRenderer` (seed-driven activities), `AudioPlaceholderBar`.
+- **`components/curriculum/`** — `PhrasePracticeCard`, `LessonStickyFooter` (used on lesson pages).
+- **`components/review/review-queue.tsx`** — Client-side filters for the review page.
+- **`db/schema.sql`** — Full DDL + RLS.
+- **`scripts/build_platform_seed.py`** + **`npm run seed:sql`** — Regenerates **`db/seed.sql`**.
 
 ## Local setup
 
@@ -58,7 +79,7 @@ cp .env.example .env.local
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. In the SQL editor, run **`db/schema.sql`** end-to-end (extensions, tables, triggers, RLS).
-3. Run **`db/seed.sql`** to load levels, lessons, and phrases (seed / illustrative copy).
+3. Run **`db/seed.sql`** to load the course catalog (levels → modules → lessons → phrases → activities → sound lessons). Regenerate anytime with **`npm run seed:sql`** (runs `scripts/build_platform_seed.py`).
 4. **Auth → URL configuration**
    - Set **Site URL** to your `NEXT_PUBLIC_APP_URL` (e.g. `http://localhost:3000`).
    - Add redirect: `http://localhost:3000/auth/callback` (and production URL when you deploy).
@@ -70,9 +91,9 @@ cp .env.example .env.local
 **RLS summary:**
 
 - `profiles` — users read/update own row (sensitive columns guarded by trigger).
-- `levels` — any **authenticated** user can read (for dashboard preview + `lesson_count`).
-- `lessons`, `phrases` — read only if `profiles.has_paid_access` is true and lessons are published.
-- `user_lesson_progress`, `user_phrase_progress` — users read/write **own** rows only.
+- `languages`, `courses`, `levels`, **`modules`**, **`lessons`**, **`sound_lessons`** — any **authenticated** user can **read** (so the Learn path and pronunciation lab can show structure and lesson titles; **paid** is still required for phrase drills and activities).
+- **`phrases`**, **`activities`** — read only if the user has **`has_paid_access`** and the parent lesson is published (phrases join lessons in policy).
+- `user_lesson_progress`, `user_phrase_progress`, `user_activity_attempts`, `user_skill_progress` — users read/write **own** rows only (where policies exist).
 - `payments` — **no** policy for `authenticated`; inserts/updates happen with the **service role** in the webhook (bypasses RLS).
 
 ### 4. Stripe setup
@@ -85,6 +106,8 @@ cp .env.example .env.local
    ```
 
    Use the printed **webhook signing secret** as `STRIPE_WEBHOOK_SECRET` in `.env.local`.
+
+3. **Paid access after checkout** requires **`SUPABASE_SERVICE_ROLE_KEY`** in `.env.local` (Supabase → Settings → API → `service_role`). Without it, neither the Stripe webhook nor the post-checkout **session sync** on `/dashboard` can set `profiles.has_paid_access`. After paying, you should land on `/dashboard?checkout=success&session_id=…`; the app verifies that session with Stripe and unlocks access when the service role key is present.
 
 3. In production, add an HTTPS endpoint `https://<your-domain>/api/stripe/webhook` and select at least **`checkout.session.completed`**.
 
@@ -130,30 +153,64 @@ Open [http://localhost:3000](http://localhost:3000). Middleware requires Supabas
 brew upgrade supabase stripe
 ```
 
-## Database schema
+## Database schema (data model)
 
-Authoritative DDL lives in **`db/schema.sql`**. Main tables:
+Authoritative DDL lives in **`db/schema.sql`**. Learning catalog and progress:
 
-- **`profiles`** — `has_paid_access`, `stripe_customer_id`, …
-- **`levels`** — CEFR `code`, `lesson_count` (denormalized for unpaid dashboard; update when you add/remove lessons)
-- **`lessons`**, **`phrases`** — curriculum
-- **`user_lesson_progress`**, **`user_phrase_progress`** — per-user progress
-- **`payments`** — Stripe checkout audit trail
+| Table | Purpose |
+|-------|---------|
+| **`languages`** | e.g. `pt` |
+| **`courses`** | e.g. `european-portuguese-beginners` (`slug`, `title`, FK → `languages`) |
+| **`levels`** | CEFR step within a course (`code`, `title`, **`path_label`**, `lesson_count`, FK → `courses`) |
+| **`modules`** | Themed units within a level (`slug`, `title`, **`coming_soon`**) |
+| **`lessons`** | `module_id`, **`slug`**, `title`, **`learn_excerpt`**, `is_published` |
+| **`phrases`** | Portuguese line + English + phonetics + **`tags`[]** + **`audio_slow_url`**, **`audio_natural_url`**, **`audio_context_url`** (plus legacy **`audio_url`**) |
+| **`activities`** | `lesson_id`, **`activity_type`**, `title`, **`skill`**, **`config` (jsonb)**, `sort_order` |
+| **`sound_lessons`** | Pronunciation lab cards: `slug`, `title`, **`body` (jsonb)** (explanation, approximations, examples) |
+| **`user_lesson_progress`** | `lesson_id`, `status`, `completed_at` |
+| **`user_phrase_progress`** | `phrase_id`, **`status`**, **`is_saved`**, **`speaking_confidence`**, `practice_count`, … |
+| **`user_activity_attempts`** | `activity_id`, `correct`, `response` (jsonb) — powers **Progress** skill bars |
+| **`user_skill_progress`** | Reserved for future denormalized skill totals (optional; UI also derives from attempts) |
+| **`profiles`**, **`payments`** | Auth profile + Stripe audit |
+
+**URLs** use `levels.code`, `modules.slug`, and `lessons.slug` (stable links).
 
 ## Seed data
 
-**`db/seed.sql`** wipes curriculum tables (`DELETE` order: phrases → lessons → levels) and re-inserts illustrative **European Portuguese** content for Americans in Portugal. It is **not** linguistic canon — replace over time.
+**`db/seed.sql`** is generated by **`npm run seed:sql`**. It clears catalog + user progress tables (dev-oriented) and inserts:
 
-Re-run any time in dev after you tweak copy (note: deleting phrases/lessons cascades linked progress rows).
+- **A1** — ten modules (Sound Foundations, Greetings, Introductions, Numbers & Time, Food & Cafés, Directions, Shopping, People & Family, Grammar Patterns, Survival Phrases) each with a starter lesson, phrases, and sample **`activities`**.
+- **A2 / B1 / B2** — placeholder **`modules`** with **`coming_soon = true`**.
+- **`sound_lessons`** — eight European Portuguese topics (nasal vowels, final -s, unstressed vowels, open/closed vowels, R, lh/nh, stress, rhythm).
 
-## Editing curriculum (no admin CMS yet)
+Re-run in the Supabase SQL Editor after regenerating. **Warning:** aggressive `DELETE`s remove learner progress in dev — use migrations or a softer seed for production.
 
-1. **Levels** — Insert/update `levels` (`code`, `title`, `description`, `sort_order`, **`lesson_count`**).
-2. **Lessons** — Insert into `lessons` with `level_id`, `title`, `description`, `sort_order`, `is_published`.
-3. **Phrases** — Insert into `phrases` with `lesson_id`, copy fields, `sort_order`.
-4. **Audio** — Set `phrases.audio_url` to any HTTPS URL (Supabase Storage, CDN, etc.). The lesson UI renders an `<audio>` element when the column is non-null.
+## How to add lessons
 
-Easiest workflow for small edits: duplicate a block in **`db/seed.sql`**, adjust text, and run the script in the SQL editor. For production, prefer migrations (Supabase CLI or SQL files in CI).
+1. Ensure the **`modules`** row exists (`level_id`, unique `slug` per level).
+2. **`INSERT`** into **`lessons`** with `module_id`, unique `slug` within that module, `title`, optional `description`, **`learn_excerpt`** (short “Learn” panel copy), `sort_order`, `is_published = true`.
+3. Update **`levels.lesson_count`** if you use that denormalized field for dashboard previews (optional if you recompute from joins in app code).
+
+## How to add activities
+
+Insert into **`activities`** with:
+
+- **`activity_type`** — one of: `multiple_choice`, `listen_placeholder`, `match_meaning`, `type_missing`, `translate_pt`, `rebuild_sentence`, `self_rate_speaking`, `pronunciation_confidence` (renderer in **`components/learning/activity-renderer.tsx`**).
+- **`skill`** — `reading` \| `listening` \| `writing` \| `speaking` \| `pronunciation` (used for Practice filters and Progress grouping).
+- **`config`** (jsonb) — shape per type, e.g.:
+  - `multiple_choice`: `{ "prompt": "…", "options": ["…"], "correctIndex": 0 }`
+  - `listen_placeholder`: `{ "label": "…" }`
+  - `match_meaning`: `{ "pairs": [["PT","EN"], …] }`
+  - `type_missing`: `{ "template": "_____ …", "answer": "…", "hint": "…" }`
+  - `translate_pt`: `{ "prompt": "…", "answers": ["…", "…"] }` (normalized compare)
+  - `rebuild_sentence`: `{ "tokens": ["…"], "answer": "full sentence" }`
+
+## How to add audio later
+
+- **Per phrase:** set **`phrases.audio_url`** for a single `<audio>` control, and/or **`audio_slow_url`**, **`audio_natural_url`**, **`audio_context_url`** once you host files (Supabase Storage, CDN, etc.). The lesson UI already shows **placeholder** buttons when URLs are null; swap placeholders for real `<audio>` or a player component when URLs exist.
+- **Per lesson / activity:** extend **`activities.config`** with URL fields and teach **`listen_placeholder`** (or a new type) to render real players — the data layer is ready for extra keys without schema migrations.
+
+Easiest workflow for small edits: adjust **`scripts/build_platform_seed.py`** and run **`npm run seed:sql`**, then paste the new **`db/seed.sql`** in the SQL editor. For production, prefer migrations (Supabase CLI or SQL in CI).
 
 ## Deploy
 
@@ -162,20 +219,23 @@ Easiest workflow for small edits: duplicate a block in **`db/seed.sql`**, adjust
 
 ## MVP limitations (by design)
 
-Not included yet (structure allows adding them later):
+Not included in this release (the schema and UI hooks are meant to grow into these):
 
-- Speech recognition or pronunciation scoring
-- Native recording pipeline / CMS for bulk audio
-- Full admin CMS
-- Additional languages/dialects (only European Portuguese seed track)
-- App Store clients
-- Social/community, streaks, badges
+- **AI pronunciation scoring** or third-party speech grading
+- **Real speech recognition** (user speech is not captured or analyzed)
+- **Real audio files** in-repo (placeholders only until you set URLs)
+- **Mobile app store** distribution (web only)
+- **Full admin CMS** (SQL / seed script authoring for now)
+- **Social features**, streaks, badges, leaderboards
+- **Certified CEFR alignment** — levels are learning paths, not exam prep guarantees
 
-## Next features to build
+## Recommended next features
 
 - **Subscriptions** — second Stripe Price + webhook handling for `customer.subscription.updated` / `deleted`
-- **Supabase Storage** — upload WAV/MP3 per phrase; keep `audio_url` in sync via Edge Function or admin script
-- **Regenerate types** — `supabase gen types typescript` and replace `types/database.ts` to remove manual casts in `lib/progress.ts`
+- **Supabase Storage** — upload WAV/MP3 per phrase; populate `audio_*` columns; optional Edge Function to sync metadata
+- **Regenerate types** — `npm run supabase:types` and merge **`types/database.generated.ts`** into **`types/database.ts`**
+- **ASR + scoring pipeline** — new tables for attempts + provider keys; keep lesson UI behind feature flags
+- **SRS / scheduling** — spaced repetition on top of `user_phrase_progress`
 - **Email templates** — branded Supabase auth emails
 - **Admin** — internal dashboard or Notion-driven content until a real CMS exists
 
