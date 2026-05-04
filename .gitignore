@@ -37,3 +37,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated from `npm run supabase:types` (optional; remove this line if you commit the file)
+types/database.generated.ts

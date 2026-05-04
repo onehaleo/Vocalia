@@ -11,6 +11,7 @@ Vocalia is a **mobile-first** web app for **adult learners** who want clearer **
 Supabase clients live under **`utils/supabase/`** (browser + server + middleware session refresh), matching current Supabase docs. App code can keep importing **`@/lib/supabase/server`** (`await createClient()`), which delegates to `utils/supabase/server` with `await cookies()`.
 
 Optional — Supabase Agent Skills for Cursor: `npx skills add supabase/agent-skills`
+
 - **Stripe** — Checkout (`payment` mode) + webhooks to flip `profiles.has_paid_access`
 
 ## Project overview
@@ -96,6 +97,38 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Middleware requires Supabase public env vars for all matched routes.
+
+### 6. Supabase & Stripe CLI (verify setup)
+
+**Supabase**
+
+- Repo is **linked** to the cloud project when `supabase projects list` shows a **●** next to **Vocalia** (project ref is stored under `supabase/.temp/`, which is gitignored).
+- Config lives in **`supabase/config.toml`**. Local stack (`supabase start`) is optional; `supabase status` only works when Docker is running that stack.
+- **Hosted DB** schema/seed: keep using **`db/schema.sql`** and **`db/seed.sql`** in the Supabase SQL Editor (source of truth for migrations today). For **`supabase db reset`** locally, seed is wired to **`../db/seed.sql`** from `config.toml`.
+- Regenerate TypeScript types from the linked project:
+
+  ```bash
+  npm run supabase:types
+  ```
+
+  Review **`types/database.generated.ts`** and merge into **`types/database.ts`** when you are ready (the app currently uses the hand-written `Database` type).
+
+**Stripe**
+
+- Run `stripe login` once so the CLI is paired with your account (`stripe config --list` shows the default profile).
+- Local webhooks (while `npm run dev` is on port 3000):
+
+  ```bash
+  npm run stripe:listen
+  ```
+
+  Put the printed `whsec_...` value into **`.env.local`** as **`STRIPE_WEBHOOK_SECRET`** (this secret is only for the CLI forwarder, not the Dashboard webhook used in production).
+
+**Upgrade CLIs (recommended)**
+
+```bash
+brew upgrade supabase stripe
+```
 
 ## Database schema
 
