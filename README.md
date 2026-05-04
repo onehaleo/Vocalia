@@ -129,7 +129,9 @@ Open [http://localhost:3000](http://localhost:3000). Middleware requires Supabas
 
 - Repo is **linked** to the cloud project when `supabase projects list` shows a **●** next to **Vocalia** (project ref is stored under `supabase/.temp/`, which is gitignored).
 - Config lives in **`supabase/config.toml`**. Local stack (`supabase start`) is optional; `supabase status` only works when Docker is running that stack.
-- **Hosted DB** schema/seed: keep using **`db/schema.sql`** and **`db/seed.sql`** in the Supabase SQL Editor (source of truth for migrations today). For **`supabase db reset`** locally, seed is wired to **`../db/seed.sql`** from `config.toml`.
+- **Hosted DB** schema/seed: run **`db/schema.sql`** then **`db/seed.sql`** in the Supabase SQL Editor (source of truth for DDL).
+- **Local CLI seed:** `supabase/config.toml` points **`[db.seed]`** at **`../db/seed.sql`**. The CLI runs migrations **before** that seed. This repo includes **`supabase/migrations/20250504180000_vocalia_schema.sql`** (copy of `db/schema.sql`) so `supabase start` / **`supabase db reset`** succeed. After changing **`db/schema.sql`**, copy it into that migration file (or add a new migration) so local and CI stay consistent.
+- **Rerun seed locally (destructive — wipes local DB):** `supabase start` (Docker), then **`supabase db reset`** (or **`npm run supabase:db:reset`**). Regenerate data SQL first with **`npm run seed:sql`** if you changed **`scripts/build_platform_seed.py`**.
 - Regenerate TypeScript types from the linked project:
 
   ```bash

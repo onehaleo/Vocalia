@@ -10,7 +10,8 @@
     "stripe:listen": "stripe listen --forward-to localhost:3000/api/stripe/webhook",
     "seed:sql": "python3 scripts/build_platform_seed.py",
     "supabase:types": "supabase gen types typescript --linked --schema public > types/database.generated.ts",
-    "supabase:projects": "supabase projects list"
+    "supabase:projects": "supabase projects list",
+    "supabase:db:reset": "supabase db reset"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
