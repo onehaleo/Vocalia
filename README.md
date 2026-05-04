@@ -187,6 +187,28 @@ Authoritative DDL lives in **`db/schema.sql`**. Learning catalog and progress:
 
 Re-run in the Supabase SQL Editor after regenerating. **Warning:** aggressive `DELETE`s remove learner progress in dev — use migrations or a softer seed for production.
 
+### Troubleshooting: “No course found. Run db/seed.sql in Supabase.”
+
+Confirm all of the following:
+
+- **`db/schema.sql`** has been applied to this Supabase project.
+- **`db/seed.sql`** has been run in the SQL Editor **without errors** (a failed batch can leave `courses` / `levels` empty).
+- **`db/seed.sql`** does not contain invalid UUID literals. UUIDs may only use hex digits **`0-9`** and **`a-f`**. Regenerate the file with **`npm run seed:sql`** after pulling the latest **`scripts/build_platform_seed.py`**.
+- Tables **`public.courses`** and **`public.levels`** contain rows after the seed.
+- The deployed app’s **`NEXT_PUBLIC_SUPABASE_URL`** (Vercel env or `.env.local`) points at the **same** Supabase project where you ran the seed.
+
+Verification queries (SQL editor):
+
+```sql
+select count(*) as courses from public.courses;
+select count(*) as levels from public.levels;
+select count(*) as modules from public.modules;
+select count(*) as lessons from public.lessons;
+select count(*) as phrases from public.phrases;
+
+select id, slug, title from public.courses;
+```
+
 ## How to add lessons
 
 1. Ensure the **`modules`** row exists (`level_id`, unique `slug` per level).

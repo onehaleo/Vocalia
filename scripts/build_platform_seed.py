@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Generate db/seed.sql — European Portuguese course, modules, lessons, phrases, activities, sound lessons."""
+"""Generate db/seed.sql — European Portuguese course, modules, lessons, phrases, activities, sound lessons.
+
+Stable IDs use only hexadecimal UUID characters (0-9, a-f). Module / lesson / sound-lesson rows use
+e1000001… / d1000001… / c1000001… prefixes so Postgres accepts literals (m/l/s are not valid hex).
+"""
 
 from __future__ import annotations
 
@@ -386,7 +390,7 @@ insert into public.courses (id, language_id, slug, title, description) values
     lid_a1 = LEVELS["A1"][0]
     for mod in A1_MODULES:
         mod_idx += 1
-        mid = f"m1000001-0001-4001-8001-{mod_idx:012d}"
+        mid = f"e1000001-0001-4001-8001-{mod_idx:012d}"
         lines.append(
             f"insert into public.modules (id, level_id, slug, title, description, sort_order, coming_soon) values "
             f"('{mid}', '{lid_a1}', {esc(mod['slug'])}, {esc(mod['title'])}, {esc(mod['desc'])}, {mod_idx}, {str(mod['soon']).lower()});\n"
@@ -394,7 +398,7 @@ insert into public.courses (id, language_id, slug, title, description) values
         les_idx = 0
         for les in mod["lessons"]:
             les_idx += 1
-            les_id = f"l1000001-0001-4001-8001-{mod_idx:06d}{les_idx:06d}"
+            les_id = f"d1000001-0001-4001-8001-{mod_idx:06d}{les_idx:06d}"
             lines.append(
                 f"insert into public.lessons (id, module_id, slug, title, description, learn_excerpt, sort_order, is_published) values "
                 f"('{les_id}', '{mid}', {esc(les['slug'])}, {esc(les['title'])}, NULL, {esc(les['learn'])}, {les_idx}, true);\n"
@@ -435,7 +439,7 @@ insert into public.courses (id, language_id, slug, title, description) values
 
     # sound lessons
     for i, sl in enumerate(SOUND_LESSONS, start=1):
-        sid = f"s1000001-0001-4001-8001-{i:012d}"
+        sid = f"c1000001-0001-4001-8001-{i:012d}"
         lines.append(
             f"insert into public.sound_lessons (id, course_id, slug, title, summary, body, sort_order) values "
             f"('{sid}', '{COURSE}', {esc(sl['slug'])}, {esc(sl['title'])}, {esc(sl['summary'])}, {esc_json(sl['body'])}::jsonb, {sl['sort']});\n"
