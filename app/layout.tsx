@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { getUser } from "@/lib/auth";
+import { getCanonicalSiteUrl } from "@/lib/site";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -11,12 +12,18 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getCanonicalSiteUrl()),
   title: {
     default: "Vocalia — European Portuguese pronunciation",
     template: "%s · Vocalia",
   },
   description:
     "Learn how European Portuguese actually sounds, from A1 to B2, with phonetic breakdowns and guided practice.",
+  openGraph: {
+    type: "website",
+    siteName: "Vocalia",
+    url: getCanonicalSiteUrl(),
+  },
 };
 
 export default async function RootLayout({

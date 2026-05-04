@@ -67,7 +67,7 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase **publishable** key (Dashboard → API). Legacy: `NEXT_PUBLIC_SUPABASE_ANON_KEY` still works if unset. |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Secret** — server only; used by the Stripe webhook to update profiles and insert `payments` |
-| `NEXT_PUBLIC_APP_URL` | Canonical app origin (no trailing slash), used in redirects and email confirmation |
+| `NEXT_PUBLIC_APP_URL` | Canonical app origin (no trailing slash). **Production:** `https://speakvocalia.com`. **Local:** `http://localhost:3000`. Used for Stripe redirects, auth callbacks, and Open Graph `metadataBase`. |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (reserved for future Elements; checkout still needs Stripe env on the server) |
 | `STRIPE_SECRET_KEY` | Stripe secret key |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret from the Stripe webhook endpoint |
@@ -81,8 +81,8 @@ cp .env.example .env.local
 2. In the SQL editor, run **`db/schema.sql`** end-to-end (extensions, tables, triggers, RLS).
 3. Run **`db/seed.sql`** to load the course catalog (levels → modules → lessons → phrases → activities → sound lessons). Regenerate anytime with **`npm run seed:sql`** (runs `scripts/build_platform_seed.py`).
 4. **Auth → URL configuration**
-   - Set **Site URL** to your `NEXT_PUBLIC_APP_URL` (e.g. `http://localhost:3000`).
-   - Add redirect: `http://localhost:3000/auth/callback` (and production URL when you deploy).
+   - **Production:** **Site URL** `https://speakvocalia.com` — **Redirect URLs** include `https://speakvocalia.com/auth/callback`.
+   - **Local:** Site URL can stay `http://localhost:3000` with redirect `http://localhost:3000/auth/callback`, or use separate Supabase projects for dev vs prod.
 5. **Email auth**  
    For local dev you can disable “Confirm email” under Authentication settings so sign-up logs in immediately.
 
@@ -109,7 +109,7 @@ cp .env.example .env.local
 
 3. **Paid access after checkout** requires **`SUPABASE_SERVICE_ROLE_KEY`** in `.env.local` (Supabase → Settings → API → `service_role`). Without it, neither the Stripe webhook nor the post-checkout **session sync** on `/dashboard` can set `profiles.has_paid_access`. After paying, you should land on `/dashboard?checkout=success&session_id=…`; the app verifies that session with Stripe and unlocks access when the service role key is present.
 
-3. In production, add an HTTPS endpoint `https://<your-domain>/api/stripe/webhook` and select at least **`checkout.session.completed`**.
+3. In production, add an HTTPS endpoint **`https://speakvocalia.com/api/stripe/webhook`** and select at least **`checkout.session.completed`**.
 
 Checkout sends `metadata.supabase_user_id` and `client_reference_id` so the webhook can match the Supabase user.
 
@@ -214,8 +214,8 @@ Easiest workflow for small edits: adjust **`scripts/build_platform_seed.py`** an
 
 ## Deploy
 
-- **Vercel** (recommended): connect the repo, set all env vars, deploy. Set Supabase redirect URLs and Stripe webhook URL to production.
-- Ensure **`NEXT_PUBLIC_APP_URL`** matches the deployed origin so post-checkout redirects and magic links stay consistent.
+- **Vercel** (recommended): connect the repo, add the custom domain **`speakvocalia.com`** (and `www` if you use it) under Project → **Domains**, set **all env vars** (see commented block at top of **`.env.example`**), then deploy.
+- Ensure **`NEXT_PUBLIC_APP_URL`** is **`https://speakvocalia.com`** (no trailing slash) on Vercel so post-checkout redirects, auth callbacks, and metadata stay consistent.
 
 ## MVP limitations (by design)
 
