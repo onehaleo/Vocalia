@@ -77,7 +77,7 @@ cp .env.example .env.local
 
 ### 4. Stripe setup
 
-1. In the Stripe Dashboard, create a **Product** and a **one-time Price** (e.g. EUR). Copy the **Price ID** into `STRIPE_PRICE_ID`.
+1. In the Stripe Dashboard, create a **Product** and a **one-time Price** (e.g. EUR). Copy the **Price ID** (`price_…`) into **`STRIPE_PRICE_ID`** in `.env.local`. Subscription prices will fail: the app uses Checkout **`mode: "payment"`** (one-time). If `STRIPE_PRICE_ID` is missing, checkout redirects back to **`/pricing`** with an error message instead of crashing.
 2. Install the [Stripe CLI](https://stripe.com/docs/stripe-cli) for local webhooks:
 
    ```bash

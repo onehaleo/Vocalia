@@ -5,14 +5,40 @@ import { Card } from "@/components/ui/card";
 import { getUser } from "@/lib/auth";
 import { CheckoutButton } from "@/components/marketing/checkout-button";
 
+const errorCopy: Record<string, { title: string; body: string }> = {
+  missing_price_id: {
+    title: "Stripe Price ID is not set",
+    body: "Add STRIPE_PRICE_ID to your .env.local. In Stripe Dashboard → Products, create a product with a one-time price, then copy the Price ID (starts with price_). Restart npm run dev after saving.",
+  },
+  missing_stripe_secret: {
+    title: "Stripe secret key is missing",
+    body: "Add STRIPE_SECRET_KEY to .env.local (test key sk_test_… from Developers → API keys). Restart the dev server.",
+  },
+  stripe_api: {
+    title: "Stripe rejected the checkout request",
+    body: "Common causes: STRIPE_PRICE_ID is a subscription price but the app uses one-time mode; wrong account; or typo in the price ID. See the technical detail below.",
+  },
+  no_checkout_url: {
+    title: "Checkout session had no URL",
+    body: "Stripe returned a session without a checkout URL. Check your Stripe dashboard and API version.",
+  },
+};
+
 export default async function PricingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{
+    checkout?: string;
+    code?: string;
+    detail?: string;
+  }>;
 }) {
   const user = await getUser();
   const params = await searchParams;
   const cancelled = params.checkout === "cancel";
+  const errored = params.checkout === "error";
+  const errInfo = params.code ? errorCopy[params.code] : null;
+  const detail = params.detail ? decodeURIComponent(params.detail) : null;
 
   return (
     <>
@@ -26,6 +52,18 @@ export default async function PricingPage({
           <p className="mt-6 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950">
             Checkout was cancelled. You can try again whenever you are ready.
           </p>
+        ) : null}
+
+        {errored ? (
+          <div className="mt-6 rounded-xl border border-red-200/90 bg-red-50 px-4 py-3 text-sm text-red-950">
+            <p className="font-semibold">{errInfo?.title ?? "Checkout could not start"}</p>
+            <p className="mt-2">{errInfo?.body ?? "Try again or check the server terminal for errors."}</p>
+            {detail ? (
+              <pre className="mt-3 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-white/80 p-3 text-xs text-red-900">
+                {detail}
+              </pre>
+            ) : null}
+          </div>
         ) : null}
 
         <Card className="mt-10">
