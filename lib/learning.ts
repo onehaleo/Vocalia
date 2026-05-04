@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { DEFAULT_COURSE_SLUG } from "@/lib/constants";
+import { resolveProductCatalog } from "@/lib/course-scope";
 import type {
   ActivityRow,
   CourseRow,
@@ -38,32 +38,13 @@ export type LearnLevelBlock = {
   modules: ModuleWithLessons[];
 };
 
-async function getCourseRow(supabase: Awaited<ReturnType<typeof createClient>>): Promise<CourseRow | null> {
-  const { data, error } = await supabase
-    .from("courses")
-    .select("*")
-    .eq("slug", DEFAULT_COURSE_SLUG)
-    .maybeSingle();
-  if (error || !data) return null;
-  return data as CourseRow;
-}
-
 export async function getLearnPathForUser(
   userId: string,
   hasPaidAccess: boolean,
 ): Promise<{ course: CourseRow; levels: LearnLevelBlock[] } | null> {
   const supabase = await createClient();
-  const course = await getCourseRow(supabase);
-  if (!course) return null;
-
-  const { data: levelsRaw } = await supabase
-    .from("levels")
-    .select("*")
-    .eq("course_id", course.id)
-    .order("sort_order", { ascending: true });
-
-  const levels = (levelsRaw ?? []) as LevelRow[];
-  if (!levels.length) return { course, levels: [] };
+  const { course, levels } = await resolveProductCatalog(supabase);
+  if (!course || !levels.length) return null;
 
   const levelIds = levels.map((l) => l.id);
   const { data: modulesRaw } = await supabase
@@ -244,7 +225,7 @@ export async function getLessonPageBundle(
 
 export async function getSoundLessons(): Promise<SoundLessonRow[]> {
   const supabase = await createClient();
-  const course = await getCourseRow(supabase);
+  const { course } = await resolveProductCatalog(supabase);
   if (!course) return [];
   const { data } = await supabase
     .from("sound_lessons")
@@ -261,7 +242,7 @@ export async function getPhrasesForPractice(
 ): Promise<PhraseWithLessonContext[]> {
   if (!hasPaidAccess) return [];
   const supabase = await createClient();
-  const course = await getCourseRow(supabase);
+  const { course } = await resolveProductCatalog(supabase);
   if (!course) return [];
 
   const { data: phraseNested } = await supabase
@@ -327,7 +308,7 @@ export async function getDictionaryRows(
 ): Promise<DictionaryRow[]> {
   if (!hasPaidAccess) return [];
   const supabase = await createClient();
-  const course = await getCourseRow(supabase);
+  const { course } = await resolveProductCatalog(supabase);
   if (!course) return [];
 
   const q = query.trim();

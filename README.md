@@ -96,6 +96,8 @@ cp .env.example .env.local
 - `user_lesson_progress`, `user_phrase_progress`, `user_activity_attempts`, `user_skill_progress` — users read/write **own** rows only (where policies exist).
 - `payments` — **no** policy for `authenticated`; inserts/updates happen with the **service role** in the webhook (bypasses RLS).
 
+**Course catalog resolution:** `lib/course-scope.ts` prefers `courses.slug = european-portuguese-beginners`. If that row is missing or has no levels, the app follows **`levels.course_id`** from the first level row so dashboard level cards and the “lessons completed” total stay aligned (avoids “0 levels” while lessons still exist).
+
 ### 4. Stripe setup
 
 1. In the Stripe Dashboard, create a **Product** with a **one-time** price. In `.env.local`, set **`STRIPE_PRICE_ID`** to either the **Price** id (`price_…`, recommended) or the **Product** id (`prod_…`); if you use `prod_…`, Vocalia resolves the product’s default one-time price (or the first active one-time price). Subscription-only prices will fail: Checkout uses **`mode: "payment"`**. If `STRIPE_PRICE_ID` is missing, checkout redirects to **`/pricing`** with an error instead of crashing.

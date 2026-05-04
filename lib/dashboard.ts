@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { DEFAULT_COURSE_SLUG } from "@/lib/constants";
+import { countPublishedLessonsForLevels, resolveProductCatalog } from "@/lib/course-scope";
 import type { LevelRow } from "@/types/curriculum";
 
 export type LevelCardModel = {
@@ -17,28 +17,15 @@ export async function getLevelCardsForUser(
 ): Promise<LevelCardModel[]> {
   const supabase = await createClient();
 
-  const { data: courseRaw } = await supabase
-    .from("courses")
-    .select("id")
-    .eq("slug", DEFAULT_COURSE_SLUG)
-    .maybeSingle();
-  const courseId = (courseRaw as { id: string } | null)?.id;
-  if (!courseId) return [];
+  const { levels } = await resolveProductCatalog(supabase);
+  const levelsSorted = levels as LevelRow[];
 
-  const { data: levelsRaw, error: levelsError } = await supabase
-    .from("levels")
-    .select("*")
-    .eq("course_id", courseId)
-    .order("sort_order", { ascending: true });
-
-  const levels = (levelsRaw ?? []) as LevelRow[];
-
-  if (levelsError || !levels.length) {
+  if (!levelsSorted.length) {
     return [];
   }
 
   if (!hasPaidAccess) {
-    return levels.map((l) => ({
+    return levelsSorted.map((l) => ({
       id: l.id,
       code: l.code,
       title: l.title,
@@ -70,7 +57,7 @@ export async function getLevelCardsForUser(
   const completedSet = new Set(progressRows.map((r) => r.lesson_id));
 
   const countsByLevel = new Map<string, { total: number; done: number }>();
-  for (const lv of levels) {
+  for (const lv of levelsSorted) {
     countsByLevel.set(lv.id, { total: 0, done: 0 });
   }
   for (const les of lessons) {
@@ -81,7 +68,7 @@ export async function getLevelCardsForUser(
     if (completedSet.has(les.id)) cur.done += 1;
   }
 
-  return levels.map((l) => {
+  return levelsSorted.map((l) => {
     const c = countsByLevel.get(l.id) ?? { total: 0, done: 0 };
     return {
       id: l.id,
@@ -101,31 +88,8 @@ export async function getProgressSummary(userId: string, hasPaidAccess: boolean)
 
   const supabase = await createClient();
 
-  const { data: courseRaw } = await supabase
-    .from("courses")
-    .select("id")
-    .eq("slug", DEFAULT_COURSE_SLUG)
-    .maybeSingle();
-  const courseId = (courseRaw as { id: string } | null)?.id;
-
-  let totalLessons = 0;
-  if (courseId) {
-    const { count } = await supabase
-      .from("lessons")
-      .select("id, modules!inner(level_id, levels!inner(course_id))", {
-        count: "exact",
-        head: true,
-      })
-      .eq("is_published", true)
-      .eq("modules.levels.course_id", courseId);
-    totalLessons = count ?? 0;
-  } else {
-    const { count } = await supabase
-      .from("lessons")
-      .select("*", { count: "exact", head: true })
-      .eq("is_published", true);
-    totalLessons = count ?? 0;
-  }
+  const { levels } = await resolveProductCatalog(supabase);
+  const totalLessons = await countPublishedLessonsForLevels(supabase, levels);
 
   const [{ count: completedLessons }, { count: masteredPhrases }] = await Promise.all([
     supabase
