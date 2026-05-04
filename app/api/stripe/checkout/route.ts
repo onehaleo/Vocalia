@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/env";
 import { getStripe } from "@/lib/stripe";
+import { resolveCheckoutPriceId } from "@/lib/stripe-resolve-price";
 import type { Database } from "@/types/database";
 
 type ProfileCheckout = Pick<
@@ -58,9 +59,14 @@ export async function POST() {
   try {
     const stripe = getStripe();
 
+    const resolved = await resolveCheckoutPriceId(stripe, priceId);
+    if ("error" in resolved) {
+      return pricingError(appUrl, "invalid_price_config", resolved.error);
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: resolved.priceId, quantity: 1 }],
       success_url: `${appUrl}/dashboard?checkout=success`,
       cancel_url: `${appUrl}/pricing?checkout=cancel`,
       customer_email: profile?.email ?? user.email ?? undefined,

@@ -77,7 +77,7 @@ cp .env.example .env.local
 
 ### 4. Stripe setup
 
-1. In the Stripe Dashboard, create a **Product** and a **one-time Price** (e.g. EUR). Copy the **Price ID** (`price_…`) into **`STRIPE_PRICE_ID`** in `.env.local`. Subscription prices will fail: the app uses Checkout **`mode: "payment"`** (one-time). If `STRIPE_PRICE_ID` is missing, checkout redirects back to **`/pricing`** with an error message instead of crashing.
+1. In the Stripe Dashboard, create a **Product** with a **one-time** price. In `.env.local`, set **`STRIPE_PRICE_ID`** to either the **Price** id (`price_…`, recommended) or the **Product** id (`prod_…`); if you use `prod_…`, Vocalia resolves the product’s default one-time price (or the first active one-time price). Subscription-only prices will fail: Checkout uses **`mode: "payment"`**. If `STRIPE_PRICE_ID` is missing, checkout redirects to **`/pricing`** with an error instead of crashing.
 2. Install the [Stripe CLI](https://stripe.com/docs/stripe-cli) for local webhooks:
 
    ```bash

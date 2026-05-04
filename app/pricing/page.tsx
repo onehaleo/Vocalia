@@ -22,6 +22,10 @@ const errorCopy: Record<string, { title: string; body: string }> = {
     title: "Checkout session had no URL",
     body: "Stripe returned a session without a checkout URL. Check your Stripe dashboard and API version.",
   },
+  invalid_price_config: {
+    title: "Price / product configuration",
+    body: "STRIPE_PRICE_ID must be a one-time price (price_…) or a product (prod_…) whose default or first active price is one-time. See the technical detail below.",
+  },
 };
 
 export default async function PricingPage({
