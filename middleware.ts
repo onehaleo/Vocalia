@@ -14,9 +14,17 @@ const protectedPrefixes = [
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get("host")?.toLowerCase().split(":")[0] ?? "";
 
   if (pathname.startsWith("/api/stripe/webhook")) {
     return NextResponse.next();
+  }
+
+  if (host === "beta.speakvocalia.com" && pathname === "/") {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.search = "";
+    return NextResponse.redirect(loginUrl);
   }
 
   const { user, response } = await updateSession(request);

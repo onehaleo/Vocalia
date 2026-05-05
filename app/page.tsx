@@ -109,36 +109,6 @@ export default function HomePage() {
   return (
     <>
       <main>
-        <section className="border-b border-black/[0.06] bg-gradient-to-b from-white to-[var(--color-surface)] px-4 py-8 sm:px-6 sm:py-10">
-          <div className="mx-auto flex max-w-5xl flex-col gap-6">
-            <nav className="flex flex-wrap items-center justify-between gap-4">
-              <p className="text-lg font-semibold tracking-tight text-[var(--color-ink)]">Vocalia</p>
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-[var(--color-ink-muted)]">
-                <a href="#how-it-works" className="hover:text-[var(--color-ink)]">
-                  How it works
-                </a>
-                <a href="#what-youll-learn" className="hover:text-[var(--color-ink)]">
-                  What you&apos;ll learn
-                </a>
-                <a href="#pricing" className="hover:text-[var(--color-ink)]">
-                  Pricing
-                </a>
-                <a href="#faq" className="hover:text-[var(--color-ink)]">
-                  FAQ
-                </a>
-              </div>
-              <div className="flex items-center gap-2">
-                <LinkButton href={betaLogin} variant="ghost" className="px-3 py-2">
-                  Log in
-                </LinkButton>
-                <LinkButton href={betaPricing} variant="primary" className="px-4 py-2">
-                  Join beta
-                </LinkButton>
-              </div>
-            </nav>
-          </div>
-        </section>
-
         <section className="border-b border-black/[0.06] bg-gradient-to-b from-white to-[var(--color-surface)] px-4 py-16 sm:px-6 sm:py-24">
           <div className="mx-auto max-w-4xl text-center">
             <h1 className="text-4xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-6xl">
