@@ -1,26 +1,37 @@
 import Link from "next/link";
+import { betaUrl } from "@/lib/site";
 
 export function SiteFooter() {
+  const betaRoot = betaUrl("/");
+  const betaPricing = betaUrl("/pricing");
+  const betaLogin = betaUrl("/login");
+
   return (
     <footer className="border-t border-black/[0.06] bg-white py-10">
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
           <p className="font-semibold text-[var(--color-ink)]">Vocalia</p>
           <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-            European Portuguese pronunciation for English speakers.
+            Learn the language. Sound natural from day one.
           </p>
         </div>
         <div className="flex flex-wrap gap-4 text-sm text-[var(--color-ink-muted)]">
-          <Link href="/pricing" className="hover:text-[var(--color-ink)]">
+          <Link href={betaRoot} className="hover:text-[var(--color-ink)]">
+            Beta app
+          </Link>
+          <Link href={betaLogin} className="hover:text-[var(--color-ink)]">
+            Log in
+          </Link>
+          <Link href={betaPricing} className="hover:text-[var(--color-ink)]">
             Pricing
           </Link>
-          <Link href="/login" className="hover:text-[var(--color-ink)]">
-            Log in
+          <Link href="mailto:hello@speakvocalia.com" className="hover:text-[var(--color-ink)]">
+            Contact
           </Link>
         </div>
       </div>
       <p className="mx-auto mt-8 max-w-5xl px-4 text-center text-xs text-[var(--color-ink-muted)] sm:px-6">
-        Seed content is illustrative — verify with a tutor before relying on it for official situations.
+        Vocalia is an independent language-learning product and is not an official CEFR certification provider.
       </p>
     </footer>
   );
