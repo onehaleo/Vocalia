@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { LinkButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -103,8 +104,8 @@ const faqs = [
 ];
 
 export default function HomePage() {
-  const betaPricing = betaUrl("/pricing");
   const betaLogin = betaUrl("/login");
+  const betaSignup = betaUrl("/signup");
 
   return (
     <>
@@ -119,7 +120,7 @@ export default function HomePage() {
               reading, and writing skills - with native pronunciation practice built into every lesson.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <LinkButton href={betaPricing} variant="primary" className="w-full min-w-[240px] sm:w-auto">
+              <LinkButton href={betaSignup} variant="primary" className="w-full min-w-[240px] sm:w-auto">
                 Start with European Portuguese
               </LinkButton>
               <LinkButton href="#how-it-works" variant="secondary" className="w-full min-w-[240px] sm:w-auto">
@@ -229,16 +230,30 @@ export default function HomePage() {
 
         <section id="pricing" className="border-y border-black/[0.06] bg-white px-4 py-16 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-2xl font-semibold text-[var(--color-ink)]">Beta access</h2>
-            <p className="mt-3 text-[var(--color-ink-muted)]">
-              Vocalia is in early beta. Join now for access while the European Portuguese course is being expanded.
-            </p>
-            <p className="mt-3 text-sm text-[var(--color-ink-muted)]">
-              A1 is live now. A2-B2 are being expanded. Early beta members help shape what ships next.
-            </p>
-            <LinkButton href={betaPricing} variant="primary" className="mt-8">
-              Get beta access
-            </LinkButton>
+            <h2 className="text-2xl font-semibold text-[var(--color-ink)]">Get beta access</h2>
+            <Card className="mx-auto mt-8 max-w-md text-left">
+              <p className="text-sm font-medium text-[var(--color-accent)]">Early beta access</p>
+              <p className="mt-2 text-4xl font-semibold text-[var(--color-ink)]">€49</p>
+              <p className="mt-2 text-sm text-[var(--color-ink-muted)]">
+                One-time access while Vocalia Portuguese is being built.
+              </p>
+              <ul className="mt-6 space-y-2 text-sm text-[var(--color-ink)]">
+                <li>• A1 foundations live now</li>
+                <li>• Pronunciation-first phrase practice</li>
+                <li>• Speaking, listening, reading, and writing practice</li>
+                <li>• Access to new European Portuguese lessons as they are added during beta</li>
+                <li>• Help shape what ships next</li>
+              </ul>
+              <LinkButton href={betaSignup} variant="primary" className="mt-8 w-full">
+                Create an account to get access
+              </LinkButton>
+              <p className="mt-4 text-center text-sm text-[var(--color-ink-muted)]">
+                Already have an account?{" "}
+                <Link href={betaLogin} className="font-medium text-[var(--color-accent)] hover:underline">
+                  Log in
+                </Link>
+              </p>
+            </Card>
           </div>
         </section>
 
@@ -260,7 +275,7 @@ export default function HomePage() {
             <p className="mt-3 text-[var(--color-ink-muted)]">
               Join the Vocalia beta and start building practical confidence from day one.
             </p>
-            <LinkButton href={betaPricing} variant="primary" className="mt-8">
+            <LinkButton href={betaSignup} variant="primary" className="mt-8">
               Join the Vocalia beta
             </LinkButton>
           </div>
@@ -269,7 +284,7 @@ export default function HomePage() {
 
       <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-black/[0.06] bg-[var(--color-surface)]/95 p-3 backdrop-blur-md md:hidden">
         <div className="mx-auto flex max-w-lg gap-2">
-          <LinkButton href={betaPricing} variant="primary" className="flex-1">
+          <LinkButton href={betaSignup} variant="primary" className="flex-1">
             Join beta
           </LinkButton>
           <LinkButton href={betaLogin} variant="secondary" className="flex-1">

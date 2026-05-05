@@ -11,16 +11,19 @@ const protectedPrefixes = [
   "/dictionary",
   "/progress",
 ];
+const betaAppHosts = new Set(["beta.speakvocalia.com", "beta-staging.speakvocalia.com"]);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const host = request.headers.get("host")?.toLowerCase().split(":")[0] ?? "";
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const hostHeader = forwardedHost ?? request.headers.get("host") ?? "";
+  const host = hostHeader.toLowerCase().split(",")[0].trim().split(":")[0];
 
   if (pathname.startsWith("/api/stripe/webhook")) {
     return NextResponse.next();
   }
 
-  if (host === "beta.speakvocalia.com" && pathname === "/") {
+  if (betaAppHosts.has(host) && pathname === "/") {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.search = "";

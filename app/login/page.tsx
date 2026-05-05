@@ -1,7 +1,10 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
 import { Card } from "@/components/ui/card";
+import { getUser } from "@/lib/auth";
+import { marketingUrl } from "@/lib/site";
 import { firstSearchParam } from "@/lib/search-params";
 
 function LoginFallback() {
@@ -19,6 +22,11 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string | string[] }>;
 }) {
+  const user = await getUser();
+  if (user) {
+    redirect("/dashboard");
+  }
+
   const params = await searchParams;
   const authError = firstSearchParam(params.error);
 
@@ -33,8 +41,8 @@ export default async function LoginPage({
         </p>
       ) : null}
       <p className="mt-8 text-center text-sm text-[var(--color-ink-muted)]">
-        <Link href="/" className="hover:text-[var(--color-ink)]">
-          ← Back to home
+        <Link href={marketingUrl("/")} className="hover:text-[var(--color-ink)]">
+          ← Back to Vocalia
         </Link>
       </p>
     </main>
