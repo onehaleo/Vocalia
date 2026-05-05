@@ -22,7 +22,7 @@ const marketingAnchorNav = [
 
 export function SiteHeader({ signedIn }: { signedIn: boolean }) {
   const pathname = usePathname();
-  const isMarketingHome = pathname === "/";
+  const isMarketingPage = ["/", "/privacy", "/terms", "/contact"].includes(pathname);
 
   const betaLogin = betaUrl("/login");
   const betaSignup = betaUrl("/signup");
@@ -38,7 +38,7 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
             Vocalia
           </Link>
 
-          {isMarketingHome ? (
+          {isMarketingPage ? (
             <nav className="hidden flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm sm:flex md:gap-x-4">
               {marketingAnchorNav.map((item) => (
                 <Link
@@ -66,7 +66,7 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
-          {isMarketingHome ? (
+          {isMarketingPage ? (
             <nav className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm sm:hidden">
               {marketingAnchorNav.map((item) => (
                 <Link
@@ -93,7 +93,7 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
           ) : null}
 
           <nav className="flex items-center gap-2 text-sm sm:gap-4">
-            {isMarketingHome ? (
+            {isMarketingPage ? (
               <>
                 <Link
                   href={betaLogin}
