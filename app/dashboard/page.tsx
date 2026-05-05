@@ -7,10 +7,11 @@ import {
   trySyncPaidAccessFromCheckoutSession,
 } from "@/lib/stripe-sync-access";
 import { DashboardLevelCard } from "@/components/curriculum/dashboard-level-card";
-import { LinkButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ProgressBar } from "@/components/progress/progress-bar";
 import { firstSearchParam } from "@/lib/search-params";
+import { CheckoutButton } from "@/components/billing/checkout-button";
+import { marketingUrl } from "@/lib/site";
 
 /** Avoid static shell / param edge cases; always run checkout sync with real searchParams. */
 export const dynamic = "force-dynamic";
@@ -156,9 +157,15 @@ export default async function DashboardPage({
             {paid ? "Active" : "Locked"}
           </p>
           {!paid ? (
-            <LinkButton href="/pricing" variant="primary" className="mt-2">
-              Get access
-            </LinkButton>
+            <div className="mt-2 flex flex-col items-end gap-2">
+              <CheckoutButton label="Get access" />
+              <Link
+                href={marketingUrl("/#pricing")}
+                className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+              >
+                View pricing details
+              </Link>
+            </div>
           ) : null}
         </div>
       </div>
@@ -202,14 +209,12 @@ export default async function DashboardPage({
             The preview above shows real level titles and lesson counts from the seed.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
-            <LinkButton href="/pricing" variant="primary">
-              Join beta checkout
-            </LinkButton>
+            <CheckoutButton label="Continue to checkout" />
             <Link
-              href="/login"
+              href={marketingUrl("/#pricing")}
               className="inline-flex items-center text-sm font-medium text-[var(--color-accent)] hover:underline"
             >
-              Log in on another device
+              View pricing details
             </Link>
           </div>
         </Card>

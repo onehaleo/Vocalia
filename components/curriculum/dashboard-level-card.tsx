@@ -3,7 +3,9 @@ import { LinkButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ProgressBar } from "@/components/progress/progress-bar";
 import { LockIcon } from "@/components/icons/lock-icon";
+import { CheckoutButton } from "@/components/billing/checkout-button";
 import { cn } from "@/lib/cn";
+import { marketingUrl } from "@/lib/site";
 
 export function DashboardLevelCard({
   level,
@@ -60,9 +62,12 @@ export function DashboardLevelCard({
 
       <div className="mt-auto">
         {locked ? (
-          <LinkButton href="/pricing" variant="primary" className="w-full sm:w-auto">
-            Get access
-          </LinkButton>
+          <div className="space-y-3">
+            <CheckoutButton label="Get access" className="w-full sm:w-auto" />
+            <LinkButton href={marketingUrl("/#pricing")} variant="secondary" className="w-full sm:w-auto">
+              View pricing details
+            </LinkButton>
+          </div>
         ) : (
           <LinkButton href={`/learn/${level.code}`} variant="primary" className="w-full sm:w-auto">
             Open level
