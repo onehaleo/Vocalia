@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { LinkButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -230,15 +231,29 @@ export default function HomePage() {
         <section id="pricing" className="border-y border-black/[0.06] bg-white px-4 py-16 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-2xl font-semibold text-[var(--color-ink)]">Get beta access</h2>
-            <p className="mt-3 text-[var(--color-ink-muted)]">
-              Join the beta now to get early access while the European Portuguese course is being expanded.
-            </p>
-            <p className="mt-3 text-sm text-[var(--color-ink-muted)]">
-              A1 is live now. A2-B2 are being expanded. Early beta members help shape what ships next.
-            </p>
-            <LinkButton href={betaSignup} variant="primary" className="mt-8">
-              Create an account to get access
-            </LinkButton>
+            <Card className="mx-auto mt-8 max-w-md text-left">
+              <p className="text-sm font-medium text-[var(--color-accent)]">Early beta access</p>
+              <p className="mt-2 text-4xl font-semibold text-[var(--color-ink)]">$19</p>
+              <p className="mt-2 text-sm text-[var(--color-ink-muted)]">
+                One-time early access while Vocalia Portuguese is being built.
+              </p>
+              <ul className="mt-6 space-y-2 text-sm text-[var(--color-ink)]">
+                <li>• A1 foundations live now</li>
+                <li>• Pronunciation-first phrase practice</li>
+                <li>• Speaking, listening, reading, and writing practice</li>
+                <li>• Access to new European Portuguese lessons as they are added during beta</li>
+                <li>• Help shape what ships next</li>
+              </ul>
+              <LinkButton href={betaSignup} variant="primary" className="mt-8 w-full">
+                Create an account to get access
+              </LinkButton>
+              <p className="mt-4 text-center text-sm text-[var(--color-ink-muted)]">
+                Already have an account?{" "}
+                <Link href={betaLogin} className="font-medium text-[var(--color-accent)] hover:underline">
+                  Log in
+                </Link>
+              </p>
+            </Card>
           </div>
         </section>
 

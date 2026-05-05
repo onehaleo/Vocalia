@@ -15,7 +15,7 @@ const learnNav = [
 
 const marketingAnchorNav = [
   { href: "/#how-it-works", label: "How it works" },
-  { href: "/#what-youll-learn", label: "What you&apos;ll learn" },
+  { href: "/#what-youll-learn", label: "What you’ll learn" },
   { href: "/#pricing", label: "Pricing" },
   { href: "/#faq", label: "FAQ" },
 ];

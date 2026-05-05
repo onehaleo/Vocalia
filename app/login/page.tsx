@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
 import { Card } from "@/components/ui/card";
+import { marketingUrl } from "@/lib/site";
 import { firstSearchParam } from "@/lib/search-params";
 
 function LoginFallback() {
@@ -33,7 +34,7 @@ export default async function LoginPage({
         </p>
       ) : null}
       <p className="mt-8 text-center text-sm text-[var(--color-ink-muted)]">
-        <Link href="/" className="hover:text-[var(--color-ink)]">
+        <Link href={marketingUrl("/")} className="hover:text-[var(--color-ink)]">
           ← Back to home
         </Link>
       </p>
