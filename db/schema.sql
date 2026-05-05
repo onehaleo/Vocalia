@@ -122,12 +122,12 @@ create table if not exists public.phrases (
   syllable_breakdown text,
   pronunciation_notes text,
   common_mistakes text,
-  tags text[] default '{}',
+  tags text[] not null default '{}',
   audio_url text,
   audio_slow_url text,
   audio_natural_url text,
   audio_context_url text,
-  sort_order integer not null,
+  sort_order integer not null default 1,
   created_at timestamptz not null default now()
 );
 
