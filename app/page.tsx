@@ -233,9 +233,9 @@ export default function HomePage() {
             <h2 className="text-2xl font-semibold text-[var(--color-ink)]">Get beta access</h2>
             <Card className="mx-auto mt-8 max-w-md text-left">
               <p className="text-sm font-medium text-[var(--color-accent)]">Early beta access</p>
-              <p className="mt-2 text-4xl font-semibold text-[var(--color-ink)]">$19</p>
+              <p className="mt-2 text-4xl font-semibold text-[var(--color-ink)]">€49</p>
               <p className="mt-2 text-sm text-[var(--color-ink-muted)]">
-                One-time early access while Vocalia Portuguese is being built.
+                One-time access while Vocalia Portuguese is being built.
               </p>
               <ul className="mt-6 space-y-2 text-sm text-[var(--color-ink)]">
                 <li>• A1 foundations live now</li>
