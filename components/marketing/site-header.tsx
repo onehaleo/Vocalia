@@ -28,11 +28,7 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
   const betaSignup = betaUrl("/signup");
   const backToMarketing = marketingUrl("/");
 
-  const logoHref = isMarketingHome
-    ? backToMarketing
-    : signedIn
-      ? "/dashboard"
-      : "/login";
+  const logoHref = signedIn ? "/dashboard" : backToMarketing;
 
   return (
     <header className="sticky top-0 z-40 border-b border-black/[0.06] bg-[var(--color-surface)]/90 backdrop-blur-md">
@@ -111,12 +107,6 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
               </>
             ) : signedIn ? (
               <>
-                <Link
-                  href={backToMarketing}
-                  className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
-                >
-                  Back to Vocalia
-                </Link>
                 <Link
                   href="/dashboard"
                   className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
