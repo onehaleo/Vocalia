@@ -42,19 +42,19 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
             </nav>
           ) : isMarketingHome ? (
             <nav className="hidden flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm sm:flex md:gap-x-4">
-              <Link href="#how-it-works" className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
+              <Link href="/#how-it-works" className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
                 How it works
               </Link>
               <Link
-                href="#what-youll-learn"
+                href="/#what-youll-learn"
                 className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
               >
                 What you&apos;ll learn
               </Link>
-              <Link href="#pricing" className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
+              <Link href="/#pricing" className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
                 Pricing
               </Link>
-              <Link href="#faq" className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
+              <Link href="/#faq" className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
                 FAQ
               </Link>
             </nav>
@@ -75,30 +75,32 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
             </nav>
           ) : isMarketingHome ? (
             <nav className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm sm:hidden">
-              <Link href="#how-it-works" className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
+              <Link href="/#how-it-works" className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
                 How it works
               </Link>
               <Link
-                href="#what-youll-learn"
+                href="/#what-youll-learn"
                 className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
               >
                 What you&apos;ll learn
               </Link>
-              <Link href="#pricing" className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
+              <Link href="/#pricing" className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
                 Pricing
               </Link>
-              <Link href="#faq" className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
+              <Link href="/#faq" className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
                 FAQ
               </Link>
             </nav>
           ) : null}
           <nav className="flex items-center gap-2 text-sm sm:gap-4">
-            <Link
-              href={signedIn ? "/pricing" : betaPricing}
-              className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
-            >
-              Pricing
-            </Link>
+            {!isMarketingHome ? (
+              <Link
+                href={signedIn ? "/pricing" : betaPricing}
+                className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+              >
+                Pricing
+              </Link>
+            ) : null}
             {signedIn ? (
               <>
                 <Link
