@@ -162,7 +162,7 @@ export async function trySyncPaidAccessFromCheckoutEmail(
     return {
       ok: false,
       reason:
-        "no_matching_paid_checkout — In Stripe Dashboard open the payment → Checkout session and copy its id (cs_test_… / cs_live_…), then visit /dashboard?checkout=success&session_id=PASTE_HERE",
+        "no_matching_paid_checkout — In Stripe Dashboard open the payment → Checkout session and copy its id (cs_test_… / cs_live_…), then visit /dashboard?payment=success&session_id=PASTE_HERE (legacy: checkout=success also works).",
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "stripe_email_lookup_failed";

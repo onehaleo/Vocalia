@@ -211,11 +211,22 @@ create table if not exists public.payments (
 -- ---------------------------------------------------------------------------
 -- Indexes
 -- ---------------------------------------------------------------------------
-create index if not exists levels_course_id_idx on public.levels (course_id);
-create index if not exists modules_level_id_idx on public.modules (level_id);
-create index if not exists lessons_module_id_idx on public.lessons (module_id);
-create index if not exists phrases_lesson_id_idx on public.phrases (lesson_id);
-create index if not exists activities_lesson_id_idx on public.activities (lesson_id);
+-- levels(course_id): 20250505120000. Catalog FK columns may be missing on legacy DBs (IF NOT EXISTS skipped new table shapes).
+do $$
+begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'modules' and column_name = 'level_id') then
+    execute 'create index if not exists modules_level_id_idx on public.modules (level_id)';
+  end if;
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'lessons' and column_name = 'module_id') then
+    execute 'create index if not exists lessons_module_id_idx on public.lessons (module_id)';
+  end if;
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'phrases' and column_name = 'lesson_id') then
+    execute 'create index if not exists phrases_lesson_id_idx on public.phrases (lesson_id)';
+  end if;
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'activities' and column_name = 'lesson_id') then
+    execute 'create index if not exists activities_lesson_id_idx on public.activities (lesson_id)';
+  end if;
+end $$;
 create index if not exists user_lesson_progress_user_idx on public.user_lesson_progress (user_id);
 create index if not exists user_phrase_progress_user_idx on public.user_phrase_progress (user_id);
 create index if not exists user_activity_attempts_user_idx on public.user_activity_attempts (user_id);
@@ -278,7 +289,6 @@ create policy "phrases_select_paid"
   using (
     exists (
       select 1 from public.lessons l
-      join public.modules m on m.id = l.module_id
       join public.profiles p on p.id = auth.uid()
       where l.id = lesson_id and l.is_published = true and p.has_paid_access = true
     )

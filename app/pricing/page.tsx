@@ -34,6 +34,7 @@ export default async function PricingPage({
 }: {
   searchParams: Promise<{
     checkout?: string | string[];
+    payment?: string | string[];
     code?: string | string[];
     detail?: string | string[];
     from?: string | string[];
@@ -42,11 +43,12 @@ export default async function PricingPage({
   const user = await getUser();
   const params = await searchParams;
   const checkout = firstSearchParam(params.checkout);
+  const payment = firstSearchParam(params.payment);
   const code = firstSearchParam(params.code);
   const detailRaw = firstSearchParam(params.detail);
   const from = firstSearchParam(params.from);
 
-  const cancelled = checkout === "cancel";
+  const cancelled = payment === "cancelled" || checkout === "cancel";
   const errored = checkout === "error";
   const errInfo = code ? errorCopy[code] : null;
   const detail = detailRaw ? decodeURIComponent(detailRaw) : null;

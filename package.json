@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "env:pull": "vercel env pull .env.local",
+    "check:env": "node scripts/check-env.mjs",
     "stripe:listen": "stripe listen --forward-to localhost:3000/api/stripe/webhook",
     "seed:sql": "python3 scripts/build_platform_seed.py",
     "supabase:types": "supabase gen types typescript --linked --schema public > types/database.generated.ts",

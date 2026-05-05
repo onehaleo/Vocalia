@@ -31,7 +31,9 @@ export async function POST(request: Request) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const userId =
-      session.metadata?.supabase_user_id ?? session.client_reference_id;
+      session.metadata?.userId ??
+      session.metadata?.supabase_user_id ??
+      session.client_reference_id;
     if (!userId) {
       console.error("checkout.session.completed missing user id");
       return NextResponse.json({ received: true });

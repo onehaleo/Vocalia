@@ -45,6 +45,20 @@ Optional — Supabase Agent Skills for Cursor: `npx skills add supabase/agent-sk
 - **`db/schema.sql`** — Full DDL + RLS.
 - **`scripts/build_platform_seed.py`** + **`npm run seed:sql`** — Regenerates **`db/seed.sql`**.
 
+## Environments (local, staging, production)
+
+| | **Local** | **Staging** | **Production (beta)** |
+|---|-----------|-------------|------------------------|
+| **URL** | `http://localhost:3000` | `https://staging.speakvocalia.com` | `https://beta.speakvocalia.com` |
+| **Git** | feature branches | `staging` branch → Vercel **Preview** (assign domain) | `main` → Vercel **Production** |
+| **Stripe** | **Test** (`pk_test_` / `sk_test_`) | **Test** | **Live** (`pk_live_` / `sk_live_`) |
+| **Supabase** | Staging / dev project (recommended) | Same staging / dev project | **Production** project (isolated) |
+| **`NEXT_PUBLIC_APP_ENV`** | `local` | `staging` | `production` |
+
+**Rules:** Do not put `SUPABASE_SERVICE_ROLE_KEY` or Stripe secrets in `NEXT_PUBLIC_*`. On **`next start`** / Vercel with `NODE_ENV=production`, the app runs **`validateDeploymentEnvOrThrow`** (`instrumentation.ts` → **`lib/env.ts`**) so `NEXT_PUBLIC_APP_URL` matches `NEXT_PUBLIC_APP_ENV`, and Stripe key prefixes match (test vs live). **`next dev`** skips that hook unless you set **`FORCE_ENV_VALIDATION=1`**. For builds or CI without secrets, use **`SKIP_ENV_VALIDATION=1`** (never in production). Manual check: **`npm run check:env`** (loads `.env.local` via Node’s parser when you run `node --env-file=.env.local scripts/check-env.mjs`, or plain `npm run check:env` after exporting vars).
+
+**Note:** The apex domain **speakvocalia.com** is not repurposed in this doc; it can later point at a marketing site or redirect to `beta.speakvocalia.com`—do that in DNS / Vercel only after an explicit decision.
+
 ## Local setup
 
 ### 1. Clone and install
@@ -56,33 +70,37 @@ npm install
 
 ### 2. Environment variables
 
-Copy the example file and fill in values:
+Copy the example file and fill in values (never commit `.env.local`):
 
 ```bash
 cp .env.example .env.local
 ```
 
-| Variable | Purpose |
-|----------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase **publishable** key (Dashboard → API). Legacy: `NEXT_PUBLIC_SUPABASE_ANON_KEY` still works if unset. |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Secret** — server only; used by the Stripe webhook to update profiles and insert `payments` |
-| `NEXT_PUBLIC_APP_URL` | Canonical app origin (no trailing slash). **Production:** `https://speakvocalia.com`. **Local:** `http://localhost:3000`. Used for Stripe redirects, auth callbacks, and Open Graph `metadataBase`. |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (reserved for future Elements; checkout still needs Stripe env on the server) |
-| `STRIPE_SECRET_KEY` | Stripe secret key |
-| `STRIPE_WEBHOOK_SECRET` | Signing secret from the Stripe webhook endpoint |
-| `STRIPE_PRICE_ID` | **One-time** Price ID (`mode=payment` in Checkout) |
+| Variable | Client-safe | Purpose |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_APP_ENV` | Yes | `local` \| `staging` \| `production` — used for validation |
+| `NEXT_PUBLIC_APP_URL` | Yes | Canonical origin, no trailing slash (must match the table above for each env) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon (publishable) key. Alternative name: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` if the older name is already in use. |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Yes | Stripe publishable key — `pk_test_` (local/staging) or `pk_live_` (production) |
+| `SUPABASE_SERVICE_ROLE_KEY` | **No** — server only | Webhook + profile repair; **never** expose to the browser |
+| `STRIPE_SECRET_KEY` | **No** | `sk_test_` or `sk_live_` |
+| `STRIPE_WEBHOOK_SECRET` | **No** | Dashboard webhook signing secret, or `whsec_…` from `stripe listen` locally |
+| `STRIPE_PRICE_ID` | **No** | One-time price (`price_…`) or product (`prod_…`) — Checkout uses `mode=payment` |
 
-**Assumption (MVP):** Checkout is **one-time** (`payment`). To add subscriptions later, create a recurring Price, switch Checkout `mode` to `subscription`, and extend the webhook to handle `customer.subscription.*` events (documented as a next step below).
+**Validation:** See **`lib/env.ts`** (`validateDeploymentEnvOrThrow`). **`lib/supabase/admin.ts`** is server-only (service role).
+
+**Assumption (MVP):** Checkout is **one-time** (`payment`). Subscriptions can be added later with `mode: subscription` and additional webhook events.
 
 ### 3. Supabase setup
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. In the SQL editor, run **`db/schema.sql`** end-to-end (extensions, tables, triggers, RLS).
 3. Run **`db/seed.sql`** to load the course catalog (levels → modules → lessons → phrases → activities → sound lessons). Regenerate anytime with **`npm run seed:sql`** (runs `scripts/build_platform_seed.py`).
-4. **Auth → URL configuration**
-   - **Production:** **Site URL** `https://speakvocalia.com` — **Redirect URLs** include `https://speakvocalia.com/auth/callback`.
-   - **Local:** Site URL can stay `http://localhost:3000` with redirect `http://localhost:3000/auth/callback`, or use separate Supabase projects for dev vs prod.
+4. **Auth → URL configuration** (match your Supabase project to the app URL)
+   - **Local:** Site URL `http://localhost:3000` — Redirect URLs include `http://localhost:3000/auth/callback`.
+   - **Staging:** Site URL `https://staging.speakvocalia.com` — Redirect `https://staging.speakvocalia.com/auth/callback`.
+   - **Production (beta):** Site URL `https://beta.speakvocalia.com` — Redirect `https://beta.speakvocalia.com/auth/callback`.
 5. **Email auth**  
    For local dev you can disable “Confirm email” under Authentication settings so sign-up logs in immediately.
 
@@ -101,19 +119,22 @@ cp .env.example .env.local
 ### 4. Stripe setup
 
 1. In the Stripe Dashboard, create a **Product** with a **one-time** price. In `.env.local`, set **`STRIPE_PRICE_ID`** to either the **Price** id (`price_…`, recommended) or the **Product** id (`prod_…`); if you use `prod_…`, Vocalia resolves the product’s default one-time price (or the first active one-time price). Subscription-only prices will fail: Checkout uses **`mode: "payment"`**. If `STRIPE_PRICE_ID` is missing, checkout redirects to **`/pricing`** with an error instead of crashing.
-2. Install the [Stripe CLI](https://stripe.com/docs/stripe-cli) for local webhooks:
+2. Install the [Stripe CLI](https://stripe.com/docs/stripe-cli). Forward webhooks to the local API:
 
    ```bash
-   stripe listen --forward-to localhost:3000/api/stripe/webhook
+   npm run stripe:listen
    ```
 
-   Use the printed **webhook signing secret** as `STRIPE_WEBHOOK_SECRET` in `.env.local`.
+   Use the printed **`whsec_…`** signing secret as **`STRIPE_WEBHOOK_SECRET`** in `.env.local`.
 
-3. **Paid access after checkout** requires **`SUPABASE_SERVICE_ROLE_KEY`** in `.env.local` (Supabase → Settings → API → `service_role`). Without it, neither the Stripe webhook nor the post-checkout **session sync** on `/dashboard` can set `profiles.has_paid_access`. After paying, you should land on `/dashboard?checkout=success&session_id=…`; the app verifies that session with Stripe and unlocks access when the service role key is present.
+3. **Paid access after checkout** requires **`SUPABASE_SERVICE_ROLE_KEY`** in `.env.local` (Supabase → Settings → API → `service_role`). Without it, neither the Stripe webhook nor the post-checkout **session sync** on `/dashboard` can set `profiles.has_paid_access`. After paying, you land on `/dashboard?payment=success&session_id=…` (legacy `checkout=success` still works); the app verifies the session with Stripe when the service role key is present.
 
-3. In production, add an HTTPS endpoint **`https://speakvocalia.com/api/stripe/webhook`** and select at least **`checkout.session.completed`**.
+4. **Stripe webhooks (Dashboard → Developers → Webhooks)** — create endpoints per mode:
+   - **Staging (Stripe test mode):** `https://staging.speakvocalia.com/api/stripe/webhook`
+   - **Production (Stripe live mode):** `https://beta.speakvocalia.com/api/stripe/webhook`  
+   Subscribe at least to **`checkout.session.completed`**.
 
-Checkout sends `metadata.supabase_user_id` and `client_reference_id` so the webhook can match the Supabase user.
+Checkout sends `metadata.userId`, `metadata.supabase_user_id`, and `client_reference_id` so the webhook can match the Supabase user.
 
 ### 5. Run locally
 
@@ -125,36 +146,108 @@ Open [http://localhost:3000](http://localhost:3000). Middleware requires Supabas
 
 ### 6. Supabase & Stripe CLI (verify setup)
 
-**Supabase**
+**Supabase CLI**
 
-- Repo is **linked** to the cloud project when `supabase projects list` shows a **●** next to **Vocalia** (project ref is stored under `supabase/.temp/`, which is gitignored).
-- Config lives in **`supabase/config.toml`**. Local stack (`supabase start`) is optional; `supabase status` only works when Docker is running that stack.
-- **Hosted DB** schema/seed: run **`db/schema.sql`** then **`db/seed.sql`** in the Supabase SQL Editor (source of truth for DDL).
-- **Local CLI seed:** `supabase/config.toml` points **`[db.seed]`** at **`../db/seed.sql`**. The CLI runs migrations **before** that seed. This repo includes **`supabase/migrations/20250504180000_vocalia_schema.sql`** (copy of `db/schema.sql`) so `supabase start` / **`supabase db reset`** succeed. After changing **`db/schema.sql`**, copy it into that migration file (or add a new migration) so local and CI stay consistent.
-- **Rerun seed locally (destructive — wipes local DB):** `supabase start` (Docker), then **`supabase db reset`** (or **`npm run supabase:db:reset`**). Regenerate data SQL first with **`npm run seed:sql`** if you changed **`scripts/build_platform_seed.py`**.
-- Regenerate TypeScript types from the linked project:
+```bash
+supabase login
+# Staging / dev (example — use your project ref from the Supabase dashboard):
+supabase link --project-ref YOUR_STAGING_PROJECT_REF
+supabase db push
+```
 
-  ```bash
-  npm run supabase:types
-  ```
+- **Production:** link with **`YOUR_PRODUCTION_PROJECT_REF`** when you intend to push migrations to prod (review diff first). **Do not** run `supabase db reset` on production unless you intend to wipe data.
+- Repo **linked** state: `supabase projects list` shows **●** next to the linked project (ref under `supabase/.temp/`, gitignored).
+- **`supabase/config.toml`** — local Docker stack is optional. **`[db.seed]`** points at **`../db/seed.sql`**; migrations run before seed on **`supabase db reset`**.
+- **Hosted SQL (manual):** run **`db/schema.sql`** then **`db/seed.sql`** in the SQL Editor if you are not using CLI push.
+- **Destructive local refresh:** `supabase start` then **`supabase db reset`** or **`npm run supabase:db:reset`**.
 
-  Review **`types/database.generated.ts`** and merge into **`types/database.ts`** when you are ready (the app currently uses the hand-written `Database` type).
+Regenerate types:
 
-**Stripe**
+```bash
+npm run supabase:types
+```
 
-- Run `stripe login` once so the CLI is paired with your account (`stripe config --list` shows the default profile).
-- Local webhooks (while `npm run dev` is on port 3000):
+**Stripe CLI (local webhook testing)**
 
-  ```bash
-  npm run stripe:listen
-  ```
+```bash
+stripe login
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
 
-  Put the printed `whsec_...` value into **`.env.local`** as **`STRIPE_WEBHOOK_SECRET`** (this secret is only for the CLI forwarder, not the Dashboard webhook used in production).
+The CLI prints a **`whsec_…`** signing secret — put it in **`.env.local`** as **`STRIPE_WEBHOOK_SECRET`** for local testing only (Dashboard endpoints use the endpoint signing secrets shown in **Developers → Webhooks** for staging/production URLs).
+
+**Test checkout flow:** run **`npm run dev`**, run **`stripe listen`** in another terminal, complete checkout with a [Stripe test card](https://stripe.com/docs/testing), confirm the webhook updates **`profiles.has_paid_access`** in Supabase.
 
 **Upgrade CLIs (recommended)**
 
 ```bash
 brew upgrade supabase stripe
+```
+
+### 7. Vercel environment variables (CLI examples)
+
+Log in: `vercel login`. From the repo root, link if needed: `vercel link`.
+
+**Production** (assign **`beta.speakvocalia.com`** to the Production deployment of `main`):
+
+```bash
+vercel env add NEXT_PUBLIC_APP_ENV production
+vercel env add NEXT_PUBLIC_APP_URL production
+vercel env add NEXT_PUBLIC_SUPABASE_URL production
+vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
+vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY production
+vercel env add SUPABASE_SERVICE_ROLE_KEY production
+vercel env add STRIPE_SECRET_KEY production
+vercel env add STRIPE_WEBHOOK_SECRET production
+vercel env add STRIPE_PRICE_ID production
+```
+
+**Staging / Preview** (use the **Preview** scope for the `staging` branch; attach **`staging.speakvocalia.com`** as a branch domain in Vercel):
+
+```bash
+vercel env add NEXT_PUBLIC_APP_ENV preview
+vercel env add NEXT_PUBLIC_APP_URL preview
+vercel env add NEXT_PUBLIC_SUPABASE_URL preview
+vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY preview
+vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY preview
+vercel env add SUPABASE_SERVICE_ROLE_KEY preview
+vercel env add STRIPE_SECRET_KEY preview
+vercel env add STRIPE_WEBHOOK_SECRET preview
+vercel env add STRIPE_PRICE_ID preview
+```
+
+Set **`NEXT_PUBLIC_APP_ENV=staging`** and **`NEXT_PUBLIC_APP_URL=https://staging.speakvocalia.com`** (Preview). Use **Stripe test** keys and the **staging** Supabase project.
+
+Pull env locally (creates/updates `.env.local` — do not commit):
+
+```bash
+npm run env:pull
+```
+
+**Any change to Vercel env vars requires a new deployment** to take effect.
+
+### 8. Release workflow (recommended)
+
+1. Work on a **feature** branch.
+2. Merge into **`staging`**, push **`origin staging`**.
+3. Open **`https://staging.speakvocalia.com`** — run a **Stripe test** checkout; confirm Supabase staging **`profiles.has_paid_access`** updates.
+4. Merge **`staging`** into **`main`**, push **`origin main`**.
+5. Open **`https://beta.speakvocalia.com`** — smoke-test **live** Stripe (use a small charge; **refund** test payments in the Stripe Dashboard if needed).
+6. Confirm production Supabase reflects the payment.
+
+**Git examples**
+
+```bash
+git checkout -b staging
+git push origin staging
+
+git checkout staging
+git merge feature-branch
+git push origin staging
+
+git checkout main
+git merge staging
+git push origin main
 ```
 
 ## Database schema (data model)
@@ -238,10 +331,12 @@ Insert into **`activities`** with:
 
 Easiest workflow for small edits: adjust **`scripts/build_platform_seed.py`** and run **`npm run seed:sql`**, then paste the new **`db/seed.sql`** in the SQL editor. For production, prefer migrations (Supabase CLI or SQL in CI).
 
-## Deploy
+## Deploy (Vercel)
 
-- **Vercel** (recommended): connect the repo, add the custom domain **`speakvocalia.com`** (and `www` if you use it) under Project → **Domains**, set **all env vars** (see commented block at top of **`.env.example`**), then deploy.
-- Ensure **`NEXT_PUBLIC_APP_URL`** is **`https://speakvocalia.com`** (no trailing slash) on Vercel so post-checkout redirects, auth callbacks, and metadata stay consistent.
+- Connect the GitHub/GitLab repo to **Vercel**.
+- **Production (`main`):** assign **`beta.speakvocalia.com`** under Project → **Domains**; set Production env vars (live Stripe + production Supabase).
+- **Staging:** create/use branch **`staging`**, assign **`staging.speakvocalia.com`** as a **Preview** or branch domain; set Preview env vars (test Stripe + staging Supabase).
+- **`NEXT_PUBLIC_APP_URL`** must match the deployment URL for that environment (see **Environments** table above).
 
 ## MVP limitations (by design)
 
@@ -273,6 +368,11 @@ Not included in this release (the schema and UI hooks are meant to grow into the
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
 | `npm run lint` | ESLint |
+| `npm run env:pull` | `vercel env pull .env.local` (requires `vercel login` / linked project) |
+| `npm run check:env` | Validates `.env.local` rules (prefixes, required keys; **never prints secrets**) |
+| `npm run stripe:listen` | Stripe CLI → forward webhooks to local `/api/stripe/webhook` |
+| `npm run seed:sql` | Regenerate `db/seed.sql` from `scripts/build_platform_seed.py` |
+| `npm run supabase:db:reset` | Local Supabase DB reset (destructive) |
 
 ## License
 

@@ -18,10 +18,17 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string | string[]; session_id?: string | string[] }>;
+  searchParams: Promise<{
+    checkout?: string | string[];
+    payment?: string | string[];
+    session_id?: string | string[];
+  }>;
 }) {
   const params = await searchParams;
-  const checkoutOk = firstSearchParam(params.checkout) === "success";
+  const payment = firstSearchParam(params.payment);
+  const checkoutLegacy = firstSearchParam(params.checkout);
+  const checkoutOk =
+    payment === "success" || checkoutLegacy === "success";
   const sessionId = firstSearchParam(params.session_id);
 
   const { user, profile } = await getProfile();
