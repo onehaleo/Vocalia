@@ -15,10 +15,19 @@ const ALLOWED_APP_URLS: Record<AppDeploymentEnv, string[]> = {
     "https://staging.speakvocalia.com",
     "https://beta-staging.speakvocalia.com",
   ],
-  production: ["https://beta.speakvocalia.com"],
+  production: [
+    "https://speakvocalia.com",
+    "https://www.speakvocalia.com",
+    "https://beta.speakvocalia.com",
+  ],
 };
-const PROD_BETA_URL = "https://beta.speakvocalia.com";
-const STAGING_BETA_URL = "https://beta-staging.speakvocalia.com";
+
+const PROD_BETA_APP_URL = "https://beta.speakvocalia.com";
+const STAGING_BETA_APP_URL = "https://beta-staging.speakvocalia.com";
+
+const PROD_MARKETING_URLS = ["https://speakvocalia.com", "https://www.speakvocalia.com"];
+const STAGING_MARKETING_URLS = ["https://staging.speakvocalia.com"];
+const LOCAL_MARKETING_URLS = ["http://localhost:3000"];
 
 function required(name: string): string {
   const v = process.env[name];
@@ -119,7 +128,8 @@ export function validateDeploymentEnvOrThrow(): void {
 
   const deployment = getAppDeploymentEnv();
   const appUrl = normalizeAppUrl(required("NEXT_PUBLIC_APP_URL"));
-  const betaUrl = normalizeAppUrl(required("NEXT_PUBLIC_BETA_APP_URL"));
+  const betaAppUrl = normalizeAppUrl(required("NEXT_PUBLIC_BETA_APP_URL"));
+  const marketingUrl = normalizeAppUrl(required("NEXT_PUBLIC_MARKETING_URL"));
   const allowedAppUrls = ALLOWED_APP_URLS[deployment];
 
   if (!allowedAppUrls.includes(appUrl)) {
@@ -128,28 +138,47 @@ export function validateDeploymentEnvOrThrow(): void {
     );
   }
 
-  if (deployment === "production" && appUrl !== PROD_BETA_URL) {
-    throw new Error(
-      `Production requires NEXT_PUBLIC_APP_URL to be "${PROD_BETA_URL}".`,
-    );
+  if (deployment === "production") {
+    if (betaAppUrl !== PROD_BETA_APP_URL) {
+      throw new Error(
+        `Production requires NEXT_PUBLIC_BETA_APP_URL to be "${PROD_BETA_APP_URL}".`,
+      );
+    }
+    if (!PROD_MARKETING_URLS.includes(marketingUrl)) {
+      throw new Error(
+        `Production requires NEXT_PUBLIC_MARKETING_URL to be one of: ${PROD_MARKETING_URLS.join(", ")}.`,
+      );
+    }
   }
-  if (deployment === "production" && betaUrl !== PROD_BETA_URL) {
-    throw new Error(
-      `Production requires NEXT_PUBLIC_BETA_APP_URL to be "${PROD_BETA_URL}".`,
-    );
+
+  if (deployment === "staging") {
+    if (betaAppUrl !== STAGING_BETA_APP_URL) {
+      throw new Error(
+        `Staging requires NEXT_PUBLIC_BETA_APP_URL to be "${STAGING_BETA_APP_URL}".`,
+      );
+    }
+    if (!STAGING_MARKETING_URLS.includes(marketingUrl)) {
+      throw new Error(
+        `Staging requires NEXT_PUBLIC_MARKETING_URL to be one of: ${STAGING_MARKETING_URLS.join(", ")}.`,
+      );
+    }
   }
-  if (deployment === "staging" && betaUrl !== STAGING_BETA_URL) {
-    throw new Error(
-      `Staging requires NEXT_PUBLIC_BETA_APP_URL to be "${STAGING_BETA_URL}".`,
-    );
-  }
-  if (
-    deployment === "local" &&
-    !["http://localhost:3000", STAGING_BETA_URL].includes(betaUrl)
-  ) {
-    throw new Error(
-      `Local requires NEXT_PUBLIC_BETA_APP_URL to be "http://localhost:3000" or "${STAGING_BETA_URL}".`,
-    );
+
+  if (deployment === "local") {
+    const allowedBetaLocal = [
+      "http://localhost:3000",
+      STAGING_BETA_APP_URL,
+    ];
+    if (!allowedBetaLocal.includes(betaAppUrl)) {
+      throw new Error(
+        `Local requires NEXT_PUBLIC_BETA_APP_URL to be "http://localhost:3000" or "${STAGING_BETA_APP_URL}".`,
+      );
+    }
+    if (!LOCAL_MARKETING_URLS.includes(marketingUrl)) {
+      throw new Error(
+        `Local requires NEXT_PUBLIC_MARKETING_URL to be "http://localhost:3000".`,
+      );
+    }
   }
 
   getSupabasePublicEnv();

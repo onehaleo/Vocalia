@@ -83,6 +83,7 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_APP_ENV` | Yes | `local` \| `staging` \| `production` — used for validation |
 | `NEXT_PUBLIC_APP_URL` | Yes | Canonical origin, no trailing slash (must match the table above for each env) |
 | `NEXT_PUBLIC_BETA_APP_URL` | Yes | Base URL for marketing CTAs (`/login`, `/pricing`, `/signup`). Defaults to `https://beta.speakvocalia.com` when unset. |
+| `NEXT_PUBLIC_MARKETING_URL` | Yes | Base URL for the marketing homepage and anchor targets (`/#pricing`, `/#how-it-works`, etc). Defaults to `https://speakvocalia.com` when unset. |
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon (publishable) key. Alternative name: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` if the older name is already in use. |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Yes | Stripe publishable key — `pk_test_` (local/staging) or `pk_live_` (production) |
@@ -197,6 +198,7 @@ Log in: `vercel login`. From the repo root, link if needed: `vercel link`.
 vercel env add NEXT_PUBLIC_APP_ENV production
 vercel env add NEXT_PUBLIC_APP_URL production
 vercel env add NEXT_PUBLIC_BETA_APP_URL production
+vercel env add NEXT_PUBLIC_MARKETING_URL production
 vercel env add NEXT_PUBLIC_SUPABASE_URL production
 vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
 vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY production
@@ -212,6 +214,7 @@ vercel env add STRIPE_PRICE_ID production
 vercel env add NEXT_PUBLIC_APP_ENV preview
 vercel env add NEXT_PUBLIC_APP_URL preview
 vercel env add NEXT_PUBLIC_BETA_APP_URL preview
+vercel env add NEXT_PUBLIC_MARKETING_URL preview
 vercel env add NEXT_PUBLIC_SUPABASE_URL preview
 vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY preview
 vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY preview
@@ -221,7 +224,16 @@ vercel env add STRIPE_WEBHOOK_SECRET preview
 vercel env add STRIPE_PRICE_ID preview
 ```
 
-Set **`NEXT_PUBLIC_APP_ENV=staging`** and **`NEXT_PUBLIC_APP_URL=https://beta-staging.speakvocalia.com`** for the staging app deployment, with **`NEXT_PUBLIC_BETA_APP_URL=https://beta-staging.speakvocalia.com`**. For staging marketing deployments, `NEXT_PUBLIC_APP_URL=https://staging.speakvocalia.com` is also accepted.
+Set **`NEXT_PUBLIC_APP_ENV=staging`** for staging deployments.
+
+- **Staging app deployment (beta-staging):**
+  - `NEXT_PUBLIC_APP_URL=https://beta-staging.speakvocalia.com`
+  - `NEXT_PUBLIC_BETA_APP_URL=https://beta-staging.speakvocalia.com`
+  - `NEXT_PUBLIC_MARKETING_URL=https://staging.speakvocalia.com`
+- **Staging marketing deployment (staging.speakvocalia.com):**
+  - `NEXT_PUBLIC_APP_URL=https://staging.speakvocalia.com` (accepted)
+  - `NEXT_PUBLIC_BETA_APP_URL=https://beta-staging.speakvocalia.com`
+  - `NEXT_PUBLIC_MARKETING_URL=https://staging.speakvocalia.com`
 
 Pull env locally (creates/updates `.env.local` — do not commit):
 

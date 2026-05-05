@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { betaUrl } from "@/lib/site";
+import { betaUrl, marketingUrl } from "@/lib/site";
 
 export function SiteFooter() {
   const betaRoot = betaUrl("/");
-  const betaPricing = betaUrl("/pricing");
   const betaLogin = betaUrl("/login");
+  const marketingPricing = marketingUrl("/#pricing");
 
   return (
     <footer className="border-t border-black/[0.06] bg-white py-10">
@@ -22,7 +22,7 @@ export function SiteFooter() {
           <Link href={betaLogin} className="hover:text-[var(--color-ink)]">
             Log in
           </Link>
-          <Link href={betaPricing} className="hover:text-[var(--color-ink)]">
+          <Link href={marketingPricing} className="hover:text-[var(--color-ink)]">
             Pricing
           </Link>
           <Link href="mailto:hello@speakvocalia.com" className="hover:text-[var(--color-ink)]">

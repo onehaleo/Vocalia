@@ -50,13 +50,21 @@ function need(name) {
   return v;
 }
 
-const EXPECTED_APP_URL = {
+const ALLOWED_APP_URLS = {
   local: ["http://localhost:3000"],
   staging: ["https://staging.speakvocalia.com", "https://beta-staging.speakvocalia.com"],
-  production: ["https://beta.speakvocalia.com"],
+  production: [
+    "https://speakvocalia.com",
+    "https://www.speakvocalia.com",
+    "https://beta.speakvocalia.com",
+  ],
 };
-const PROD_BETA_URL = "https://beta.speakvocalia.com";
-const STAGING_BETA_URL = "https://beta-staging.speakvocalia.com";
+
+const PROD_BETA_APP_URL = "https://beta.speakvocalia.com";
+const STAGING_BETA_APP_URL = "https://beta-staging.speakvocalia.com";
+const PROD_MARKETING_URLS = ["https://speakvocalia.com", "https://www.speakvocalia.com"];
+const STAGING_MARKETING_URLS = ["https://staging.speakvocalia.com"];
+const LOCAL_MARKETING_URLS = ["http://localhost:3000"];
 
 function norm(u) {
   return u.replace(/\/$/, "");
@@ -65,6 +73,7 @@ function norm(u) {
 const appEnv = need("NEXT_PUBLIC_APP_ENV");
 const appUrl = need("NEXT_PUBLIC_APP_URL");
 const betaAppUrl = need("NEXT_PUBLIC_BETA_APP_URL");
+const marketingUrl = need("NEXT_PUBLIC_MARKETING_URL");
 need("NEXT_PUBLIC_SUPABASE_URL");
 
 const pub =
@@ -82,31 +91,56 @@ need("STRIPE_WEBHOOK_SECRET");
 need("STRIPE_PRICE_ID");
 need("SUPABASE_SERVICE_ROLE_KEY");
 
-if (appEnv && appUrl && EXPECTED_APP_URL[appEnv]) {
-  const allowed = EXPECTED_APP_URL[appEnv];
+if (appEnv && appUrl && ALLOWED_APP_URLS[appEnv]) {
+  const allowed = ALLOWED_APP_URLS[appEnv];
   if (!allowed.includes(norm(appUrl))) {
     errors.push(
-      `NEXT_PUBLIC_APP_URL should be one of: ${allowed.join(", ")} for NEXT_PUBLIC_APP_ENV=${appEnv}`,
+      `NEXT_PUBLIC_APP_URL should be one of: ${allowed.join(
+        ", ",
+      )} for NEXT_PUBLIC_APP_ENV=${appEnv}`,
     );
   }
 }
 
-if (appEnv === "production" && betaAppUrl && norm(betaAppUrl) !== PROD_BETA_URL) {
-  errors.push(`NEXT_PUBLIC_BETA_APP_URL must be ${PROD_BETA_URL} in production`);
-}
-if (appEnv === "staging" && betaAppUrl && norm(betaAppUrl) !== STAGING_BETA_URL) {
-  errors.push(`NEXT_PUBLIC_BETA_APP_URL must be ${STAGING_BETA_URL} in staging`);
-}
-if (
-  appEnv === "local" &&
-  betaAppUrl &&
-  !["http://localhost:3000", STAGING_BETA_URL].includes(norm(betaAppUrl))
-) {
-  errors.push(
-    `NEXT_PUBLIC_BETA_APP_URL must be http://localhost:3000 or ${STAGING_BETA_URL} in local`,
-  );
+if (appEnv === "production") {
+  if (betaAppUrl && norm(betaAppUrl) !== PROD_BETA_APP_URL) {
+    errors.push(
+      `NEXT_PUBLIC_BETA_APP_URL must be ${PROD_BETA_APP_URL} in production`,
+    );
+  }
+  if (marketingUrl && !PROD_MARKETING_URLS.includes(norm(marketingUrl))) {
+    errors.push(
+      `NEXT_PUBLIC_MARKETING_URL must be one of: ${PROD_MARKETING_URLS.join(
+        ", ",
+      )} in production`,
+    );
+  }
 }
 
+if (appEnv === "staging") {
+  if (betaAppUrl && norm(betaAppUrl) !== STAGING_BETA_APP_URL) {
+    errors.push(
+      `NEXT_PUBLIC_BETA_APP_URL must be ${STAGING_BETA_APP_URL} in staging`,
+    );
+  }
+  if (marketingUrl && !STAGING_MARKETING_URLS.includes(norm(marketingUrl))) {
+    errors.push(
+      `NEXT_PUBLIC_MARKETING_URL must be ${STAGING_MARKETING_URLS[0]} in staging`,
+    );
+  }
+}
+
+if (appEnv === "local") {
+  const allowedBetaLocal = ["http://localhost:3000", STAGING_BETA_APP_URL];
+  if (betaAppUrl && !allowedBetaLocal.includes(norm(betaAppUrl))) {
+    errors.push(
+      `NEXT_PUBLIC_BETA_APP_URL must be http://localhost:3000 or ${STAGING_BETA_APP_URL} in local`,
+    );
+  }
+  if (marketingUrl && !LOCAL_MARKETING_URLS.includes(norm(marketingUrl))) {
+    errors.push(`NEXT_PUBLIC_MARKETING_URL must be http://localhost:3000 in local`);
+  }
+}
 const pk = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim();
 const sk = process.env.STRIPE_SECRET_KEY?.trim();
 
