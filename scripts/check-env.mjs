@@ -50,11 +50,13 @@ function need(name) {
   return v;
 }
 
-const EXPECTED_URL = {
-  local: "http://localhost:3000",
-  staging: "https://staging.speakvocalia.com",
-  production: "https://beta.speakvocalia.com",
+const EXPECTED_APP_URL = {
+  local: ["http://localhost:3000"],
+  staging: ["https://staging.speakvocalia.com", "https://beta-staging.speakvocalia.com"],
+  production: ["https://beta.speakvocalia.com"],
 };
+const PROD_BETA_URL = "https://beta.speakvocalia.com";
+const STAGING_BETA_URL = "https://beta-staging.speakvocalia.com";
 
 function norm(u) {
   return u.replace(/\/$/, "");
@@ -62,6 +64,7 @@ function norm(u) {
 
 const appEnv = need("NEXT_PUBLIC_APP_ENV");
 const appUrl = need("NEXT_PUBLIC_APP_URL");
+const betaAppUrl = need("NEXT_PUBLIC_BETA_APP_URL");
 need("NEXT_PUBLIC_SUPABASE_URL");
 
 const pub =
@@ -79,12 +82,29 @@ need("STRIPE_WEBHOOK_SECRET");
 need("STRIPE_PRICE_ID");
 need("SUPABASE_SERVICE_ROLE_KEY");
 
-if (appEnv && appUrl && EXPECTED_URL[appEnv]) {
-  if (norm(appUrl) !== EXPECTED_URL[appEnv]) {
+if (appEnv && appUrl && EXPECTED_APP_URL[appEnv]) {
+  const allowed = EXPECTED_APP_URL[appEnv];
+  if (!allowed.includes(norm(appUrl))) {
     errors.push(
-      `NEXT_PUBLIC_APP_URL should be ${EXPECTED_URL[appEnv]} for NEXT_PUBLIC_APP_ENV=${appEnv}`,
+      `NEXT_PUBLIC_APP_URL should be one of: ${allowed.join(", ")} for NEXT_PUBLIC_APP_ENV=${appEnv}`,
     );
   }
+}
+
+if (appEnv === "production" && betaAppUrl && norm(betaAppUrl) !== PROD_BETA_URL) {
+  errors.push(`NEXT_PUBLIC_BETA_APP_URL must be ${PROD_BETA_URL} in production`);
+}
+if (appEnv === "staging" && betaAppUrl && norm(betaAppUrl) !== STAGING_BETA_URL) {
+  errors.push(`NEXT_PUBLIC_BETA_APP_URL must be ${STAGING_BETA_URL} in staging`);
+}
+if (
+  appEnv === "local" &&
+  betaAppUrl &&
+  !["http://localhost:3000", STAGING_BETA_URL].includes(norm(betaAppUrl))
+) {
+  errors.push(
+    `NEXT_PUBLIC_BETA_APP_URL must be http://localhost:3000 or ${STAGING_BETA_URL} in local`,
+  );
 }
 
 const pk = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim();

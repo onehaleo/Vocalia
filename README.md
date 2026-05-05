@@ -50,16 +50,16 @@ Optional — Supabase Agent Skills for Cursor: `npx skills add supabase/agent-sk
 
 | | **Local** | **Staging** | **Production (beta)** |
 |---|-----------|-------------|------------------------|
-| **URL** | `http://localhost:3000` | `https://staging.speakvocalia.com` | `https://beta.speakvocalia.com` |
+| **URL** | `http://localhost:3000` | marketing: `https://staging.speakvocalia.com` / app: `https://beta-staging.speakvocalia.com` | marketing: `https://speakvocalia.com` / app: `https://beta.speakvocalia.com` |
 | **Git** | feature branches | `staging` branch → Vercel **Preview** (assign domain) | `main` → Vercel **Production** |
 | **Stripe** | **Test** (`pk_test_` / `sk_test_`) | **Test** | **Live** (`pk_live_` / `sk_live_`) |
 | **Supabase** | Staging / dev project (recommended) | Same staging / dev project | **Production** project (isolated) |
 | **`NEXT_PUBLIC_APP_ENV`** | `local` | `staging` | `production` |
-| **`NEXT_PUBLIC_BETA_APP_URL`** | `http://localhost:3000` or `https://beta.speakvocalia.com` | `https://beta.speakvocalia.com` | `https://beta.speakvocalia.com` |
+| **`NEXT_PUBLIC_BETA_APP_URL`** | `http://localhost:3000` or `https://beta.speakvocalia.com` | `https://beta-staging.speakvocalia.com` | `https://beta.speakvocalia.com` |
 
 **Rules:** Do not put `SUPABASE_SERVICE_ROLE_KEY` or Stripe secrets in `NEXT_PUBLIC_*`. On **`next start`** / Vercel with `NODE_ENV=production`, the app runs **`validateDeploymentEnvOrThrow`** (`instrumentation.ts` → **`lib/env.ts`**) so `NEXT_PUBLIC_APP_URL` matches `NEXT_PUBLIC_APP_ENV`, and Stripe key prefixes match (test vs live). **`next dev`** skips that hook unless you set **`FORCE_ENV_VALIDATION=1`**. For builds or CI without secrets, use **`SKIP_ENV_VALIDATION=1`** (never in production). Manual check: **`npm run check:env`** (loads `.env.local` via Node’s parser when you run `node --env-file=.env.local scripts/check-env.mjs`, or plain `npm run check:env` after exporting vars).
 
-**Domain roles:** `speakvocalia.com` / `www.speakvocalia.com` are marketing. `beta.speakvocalia.com` is the beta product app. `staging.speakvocalia.com` is staging/test.
+**Domain roles:** `speakvocalia.com` / `www.speakvocalia.com` are production marketing. `beta.speakvocalia.com` is production app. `staging.speakvocalia.com` is staging marketing. `beta-staging.speakvocalia.com` is staging app.
 
 ## Local setup
 
@@ -102,7 +102,7 @@ cp .env.example .env.local
 3. Run **`db/seed.sql`** to load the course catalog (levels → modules → lessons → phrases → activities → sound lessons). Regenerate anytime with **`npm run seed:sql`** (runs `scripts/build_platform_seed.py`).
 4. **Auth → URL configuration** (match your Supabase project to the app URL)
    - **Local:** Site URL `http://localhost:3000` — Redirect URLs include `http://localhost:3000/auth/callback`.
-   - **Staging:** Site URL `https://staging.speakvocalia.com` — Redirect `https://staging.speakvocalia.com/auth/callback`.
+   - **Staging:** Site URL `https://beta-staging.speakvocalia.com` — Redirect `https://beta-staging.speakvocalia.com/auth/callback`.
    - **Production (beta):** Site URL `https://beta.speakvocalia.com` — Redirect `https://beta.speakvocalia.com/auth/callback`.
 5. **Email auth**  
    For local dev you can disable “Confirm email” under Authentication settings so sign-up logs in immediately.
@@ -133,7 +133,7 @@ cp .env.example .env.local
 3. **Paid access after checkout** requires **`SUPABASE_SERVICE_ROLE_KEY`** in `.env.local` (Supabase → Settings → API → `service_role`). Without it, neither the Stripe webhook nor the post-checkout **session sync** on `/dashboard` can set `profiles.has_paid_access`. After paying, you land on `/dashboard?payment=success&session_id=…` (legacy `checkout=success` still works); the app verifies the session with Stripe when the service role key is present.
 
 4. **Stripe webhooks (Dashboard → Developers → Webhooks)** — create endpoints per mode:
-   - **Staging (Stripe test mode):** `https://staging.speakvocalia.com/api/stripe/webhook`
+   - **Staging (Stripe test mode):** `https://beta-staging.speakvocalia.com/api/stripe/webhook`
    - **Production (Stripe live mode):** `https://beta.speakvocalia.com/api/stripe/webhook`  
    Subscribe at least to **`checkout.session.completed`**.
 
@@ -221,7 +221,7 @@ vercel env add STRIPE_WEBHOOK_SECRET preview
 vercel env add STRIPE_PRICE_ID preview
 ```
 
-Set **`NEXT_PUBLIC_APP_ENV=staging`** and **`NEXT_PUBLIC_APP_URL=https://staging.speakvocalia.com`** (Preview). Set **`NEXT_PUBLIC_BETA_APP_URL=https://beta.speakvocalia.com`** so marketing CTAs always point to the beta product app.
+Set **`NEXT_PUBLIC_APP_ENV=staging`** and **`NEXT_PUBLIC_APP_URL=https://beta-staging.speakvocalia.com`** for the staging app deployment, with **`NEXT_PUBLIC_BETA_APP_URL=https://beta-staging.speakvocalia.com`**. For staging marketing deployments, `NEXT_PUBLIC_APP_URL=https://staging.speakvocalia.com` is also accepted.
 
 Pull env locally (creates/updates `.env.local` — do not commit):
 
@@ -340,7 +340,7 @@ Easiest workflow for small edits: adjust **`scripts/build_platform_seed.py`** an
 
 - Connect the GitHub/GitLab repo to **Vercel**.
 - **Production (`main`):** assign **`beta.speakvocalia.com`** under Project → **Domains**; set Production env vars (live Stripe + production Supabase).
-- **Staging:** create/use branch **`staging`**, assign **`staging.speakvocalia.com`** as a **Preview** or branch domain; set Preview env vars (test Stripe + staging Supabase).
+- **Staging:** create/use branch **`staging`**, assign **`staging.speakvocalia.com`** (marketing) and **`beta-staging.speakvocalia.com`** (app) as Preview/branch domains; set Preview env vars (test Stripe + staging Supabase).
 - **`NEXT_PUBLIC_APP_URL`** must match the deployment URL for that environment (see **Environments** table above).
 
 ## MVP limitations (by design)
