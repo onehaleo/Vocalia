@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LinkButton } from "@/components/ui/button";
+import { betaUrl } from "@/lib/site";
 
 const learnNav = [
   { href: "/learn", label: "Learn" },
@@ -10,6 +11,10 @@ const learnNav = [
 ];
 
 export function SiteHeader({ signedIn }: { signedIn: boolean }) {
+  const betaPricing = betaUrl("/pricing");
+  const betaLogin = betaUrl("/login");
+  const betaSignup = betaUrl("/signup");
+
   return (
     <header className="sticky top-0 z-40 border-b border-black/[0.06] bg-[var(--color-surface)]/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6">
@@ -47,7 +52,7 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
           ) : null}
           <nav className="flex items-center gap-2 text-sm sm:gap-4">
             <Link
-              href="/pricing"
+              href={signedIn ? "/pricing" : betaPricing}
               className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
             >
               Pricing
@@ -72,12 +77,12 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
             ) : (
               <>
                 <Link
-                  href="/login"
+                  href={betaLogin}
                   className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
                 >
                   Log in
                 </Link>
-                <LinkButton href="/signup" variant="primary" className="px-3 py-2 sm:px-4">
+                <LinkButton href={betaSignup} variant="primary" className="px-3 py-2 sm:px-4">
                   Sign up
                 </LinkButton>
               </>

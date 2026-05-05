@@ -18,8 +18,8 @@ Optional — Supabase Agent Skills for Cursor: `npx skills add supabase/agent-sk
 
 | Route | Description |
 |-------|-------------|
-| `/` | Marketing landing |
-| `/pricing`, `/login`, `/signup` | Checkout funnel and auth |
+| `/` | Marketing homepage for `speakvocalia.com` / `www.speakvocalia.com` |
+| `/pricing`, `/login`, `/signup` | Beta app checkout/auth routes (primary host: `beta.speakvocalia.com`) |
 | `/dashboard` | Account snapshot, checkout sync, level cards linking into **Learn** |
 | **`/learn`** | Course home — CEFR levels, `path_label`, modules, lesson counts, progress bars |
 | **`/learn/[levelCode]`** | Level path — modules and lessons (published lesson titles visible when signed in) |
@@ -39,6 +39,7 @@ Optional — Supabase Agent Skills for Cursor: `npx skills add supabase/agent-sk
 - **`lib/progress.ts`** — Server actions: phrase statuses (`needs_practice`, `practicing`, `mastered`), save toggle, speaking self-rating, lesson completion, activity attempts.
 - **`lib/dashboard.ts`** — Dashboard level cards (counts lessons via `modules` → `levels`).
 - **`lib/constants.ts`** — Default course slug `european-portuguese-beginners`.
+- **`lib/site.ts`** — Canonical site URL + beta app URL helpers (`getBetaAppUrl()`, `betaUrl()`).
 - **`components/learning/`** — `ActivityRenderer` (seed-driven activities), `AudioPlaceholderBar`.
 - **`components/curriculum/`** — `PhrasePracticeCard`, `LessonStickyFooter` (used on lesson pages).
 - **`components/review/review-queue.tsx`** — Client-side filters for the review page.
@@ -54,10 +55,11 @@ Optional — Supabase Agent Skills for Cursor: `npx skills add supabase/agent-sk
 | **Stripe** | **Test** (`pk_test_` / `sk_test_`) | **Test** | **Live** (`pk_live_` / `sk_live_`) |
 | **Supabase** | Staging / dev project (recommended) | Same staging / dev project | **Production** project (isolated) |
 | **`NEXT_PUBLIC_APP_ENV`** | `local` | `staging` | `production` |
+| **`NEXT_PUBLIC_BETA_APP_URL`** | `http://localhost:3000` or `https://beta.speakvocalia.com` | `https://beta.speakvocalia.com` | `https://beta.speakvocalia.com` |
 
 **Rules:** Do not put `SUPABASE_SERVICE_ROLE_KEY` or Stripe secrets in `NEXT_PUBLIC_*`. On **`next start`** / Vercel with `NODE_ENV=production`, the app runs **`validateDeploymentEnvOrThrow`** (`instrumentation.ts` → **`lib/env.ts`**) so `NEXT_PUBLIC_APP_URL` matches `NEXT_PUBLIC_APP_ENV`, and Stripe key prefixes match (test vs live). **`next dev`** skips that hook unless you set **`FORCE_ENV_VALIDATION=1`**. For builds or CI without secrets, use **`SKIP_ENV_VALIDATION=1`** (never in production). Manual check: **`npm run check:env`** (loads `.env.local` via Node’s parser when you run `node --env-file=.env.local scripts/check-env.mjs`, or plain `npm run check:env` after exporting vars).
 
-**Note:** The apex domain **speakvocalia.com** is not repurposed in this doc; it can later point at a marketing site or redirect to `beta.speakvocalia.com`—do that in DNS / Vercel only after an explicit decision.
+**Domain roles:** `speakvocalia.com` / `www.speakvocalia.com` are marketing. `beta.speakvocalia.com` is the beta product app. `staging.speakvocalia.com` is staging/test.
 
 ## Local setup
 
@@ -80,6 +82,7 @@ cp .env.example .env.local
 |----------|-------------|---------|
 | `NEXT_PUBLIC_APP_ENV` | Yes | `local` \| `staging` \| `production` — used for validation |
 | `NEXT_PUBLIC_APP_URL` | Yes | Canonical origin, no trailing slash (must match the table above for each env) |
+| `NEXT_PUBLIC_BETA_APP_URL` | Yes | Base URL for marketing CTAs (`/login`, `/pricing`, `/signup`). Defaults to `https://beta.speakvocalia.com` when unset. |
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon (publishable) key. Alternative name: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` if the older name is already in use. |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Yes | Stripe publishable key — `pk_test_` (local/staging) or `pk_live_` (production) |
@@ -193,6 +196,7 @@ Log in: `vercel login`. From the repo root, link if needed: `vercel link`.
 ```bash
 vercel env add NEXT_PUBLIC_APP_ENV production
 vercel env add NEXT_PUBLIC_APP_URL production
+vercel env add NEXT_PUBLIC_BETA_APP_URL production
 vercel env add NEXT_PUBLIC_SUPABASE_URL production
 vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
 vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY production
@@ -207,6 +211,7 @@ vercel env add STRIPE_PRICE_ID production
 ```bash
 vercel env add NEXT_PUBLIC_APP_ENV preview
 vercel env add NEXT_PUBLIC_APP_URL preview
+vercel env add NEXT_PUBLIC_BETA_APP_URL preview
 vercel env add NEXT_PUBLIC_SUPABASE_URL preview
 vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY preview
 vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY preview
@@ -216,7 +221,7 @@ vercel env add STRIPE_WEBHOOK_SECRET preview
 vercel env add STRIPE_PRICE_ID preview
 ```
 
-Set **`NEXT_PUBLIC_APP_ENV=staging`** and **`NEXT_PUBLIC_APP_URL=https://staging.speakvocalia.com`** (Preview). Use **Stripe test** keys and the **staging** Supabase project.
+Set **`NEXT_PUBLIC_APP_ENV=staging`** and **`NEXT_PUBLIC_APP_URL=https://staging.speakvocalia.com`** (Preview). Set **`NEXT_PUBLIC_BETA_APP_URL=https://beta.speakvocalia.com`** so marketing CTAs always point to the beta product app.
 
 Pull env locally (creates/updates `.env.local` — do not commit):
 
