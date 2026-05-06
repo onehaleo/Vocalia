@@ -14,6 +14,7 @@ export function LessonStickyFooter({
   activityCount,
   nextLessonHref,
   nextLessonTitle,
+  onRepeatLesson,
 }: {
   lessonId: string;
   paths: LessonRevalidatePaths;
@@ -22,6 +23,7 @@ export function LessonStickyFooter({
   activityCount: number;
   nextLessonHref?: string;
   nextLessonTitle?: string;
+  onRepeatLesson?: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(alreadyCompleted);
@@ -64,6 +66,11 @@ export function LessonStickyFooter({
             </Button>
           </div>
         )}
+        {onRepeatLesson ? (
+          <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={onRepeatLesson}>
+            Repeat lesson
+          </Button>
+        ) : null}
         <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
           <Link href={backHref} className="font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
             ← Back to {paths.levelCode} path

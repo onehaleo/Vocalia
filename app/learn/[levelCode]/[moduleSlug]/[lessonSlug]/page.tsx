@@ -3,30 +3,15 @@ import { notFound, redirect } from "next/navigation";
 import { getProfile } from "@/lib/auth";
 import { getLessonPageBundle } from "@/lib/learning";
 import { createClient } from "@/lib/supabase/server";
-import { PhrasePracticeCard } from "@/components/curriculum/phrase-practice-card";
-import { LessonStickyFooter } from "@/components/curriculum/lesson-sticky-footer";
-import { ActivityRenderer } from "@/components/learning/activity-renderer";
-import { AudioPlaceholderBar } from "@/components/learning/audio-placeholders";
-import { Card } from "@/components/ui/card";
+import { LessonPracticeClient } from "@/components/lesson/phrase-practice-flow";
+import type { Database } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
-const skillSection = (skill: string) => {
-  switch (skill) {
-    case "listening":
-      return "Listen";
-    case "speaking":
-      return "Speak";
-    case "writing":
-      return "Write";
-    case "reading":
-      return "Read";
-    case "pronunciation":
-      return "Pronunciation";
-    default:
-      return "Practice";
-  }
-};
+type PhraseProgPick = Pick<
+  Database["public"]["Tables"]["user_phrase_progress"]["Row"],
+  "status" | "practice_count" | "is_saved" | "speaking_confidence"
+> | null;
 
 export default async function LearnLessonPage({
   params,
@@ -47,7 +32,11 @@ export default async function LearnLessonPage({
 
   const { level, module: mod, lesson, phrases, activities, phraseProgress, lessonProgress, path } = bundle;
   const alreadyCompleted = lessonProgress === "completed";
-  const masteredCount = phrases.filter((phrase) => phraseProgress.get(phrase.id)?.status === "mastered").length;
+
+  const phraseProgressById: Record<string, PhraseProgPick> = {};
+  for (const [id, v] of phraseProgress) {
+    phraseProgressById[id] = v;
+  }
 
   const supabase = await createClient();
   const { data: moduleLessonsRaw } = await supabase
@@ -64,6 +53,9 @@ export default async function LearnLessonPage({
   const listenActs = activities.filter((a) => a.activity_type === "listen_placeholder");
   const otherActs = activities.filter((a) => a.activity_type !== "listen_placeholder");
 
+  const excerpt =
+    lesson.learn_excerpt ?? lesson.description ?? "Calm, pronunciation-first practice for this lesson.";
+
   return (
     <main className="mx-auto max-w-3xl px-4 pb-12 pt-8 sm:px-6 sm:pt-10">
       <div className="sticky top-0 z-20 -mx-4 border-b border-black/[0.06] bg-white/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:px-6">
@@ -74,136 +66,37 @@ export default async function LearnLessonPage({
           >
             ← Back to {level.code} path
           </Link>
+          <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">{mod.title}</p>
           <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">{lesson.title}</h1>
+          <p className="text-sm leading-relaxed text-[var(--color-ink-muted)]">{excerpt}</p>
           <p className="text-sm text-[var(--color-ink-muted)]">
-            {lesson.learn_excerpt ?? lesson.description ?? "Calm, pronunciation-first practice for this lesson."}
+            <span className="font-medium text-[var(--color-ink)]">{phrases.length} phrases</span>
+            {" · "}
+            <span className="font-medium text-[var(--color-ink)]">{activities.length} activities</span>
+            {" · "}
+            Pronunciation-first practice (not certified instruction)
           </p>
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="rounded-full bg-black/[0.04] px-2.5 py-1 text-[var(--color-ink-muted)]">
-              Progress: {masteredCount}/{phrases.length} phrases mastered
+          {alreadyCompleted ? (
+            <span className="inline-flex w-fit rounded-full bg-[var(--color-accent-muted)] px-2.5 py-1 text-xs font-medium text-[var(--color-accent)]">
+              Lesson complete
             </span>
-            {alreadyCompleted ? (
-              <span className="rounded-full bg-[var(--color-accent-muted)] px-2.5 py-1 font-medium text-[var(--color-accent)]">
-                Lesson complete
-              </span>
-            ) : null}
-            {nextLessonHref ? (
-              <Link href={nextLessonHref} className="font-medium text-[var(--color-accent)] hover:underline">
-                Next: {nextLesson?.title}
-              </Link>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       </div>
 
-      <div className="mt-6 flex flex-col gap-2">
-        <Link
-          href={`/learn/${level.code}`}
-          className="text-sm font-medium text-[var(--color-accent)] hover:underline"
-        >
-          ← {level.code} · {mod.title}
-        </Link>
-        {lesson.description ? <p className="text-sm text-[var(--color-ink-muted)]">{lesson.description}</p> : null}
-      </div>
-
-      <section className="mt-6">
-        <Card className="space-y-3">
-          <h2 className="text-base font-semibold text-[var(--color-ink)]">Lesson overview</h2>
-          <p className="text-sm text-[var(--color-ink-muted)]">
-            What you will practice: phrase meaning, building sentences, and pronunciation confidence.
-          </p>
-          <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
-            <div className="rounded-xl bg-black/[0.03] px-3 py-2">
-              <p className="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">Phrases</p>
-              <p className="mt-1 font-semibold text-[var(--color-ink)]">{phrases.length}</p>
-            </div>
-            <div className="rounded-xl bg-black/[0.03] px-3 py-2">
-              <p className="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">Activities</p>
-              <p className="mt-1 font-semibold text-[var(--color-ink)]">{activities.length}</p>
-            </div>
-            <div className="col-span-2 rounded-xl bg-[var(--color-accent-muted)]/45 px-3 py-2 sm:col-span-1">
-              <p className="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">Reminder</p>
-              <p className="mt-1 text-[var(--color-ink)]">Pronunciation-first practice, not certified instruction.</p>
-            </div>
-          </div>
-        </Card>
-      </section>
-
-      <section className="mt-10 space-y-4">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-[var(--color-ink)]">Phrase practice</h2>
-          <p className="text-sm text-[var(--color-ink-muted)]">
-            Focus on one phrase at a time. Use “Show pronunciation details” when you need extra guidance.
-          </p>
-        </div>
-        {phrases.length === 0 ? (
-          <Card className="text-sm text-[var(--color-ink-muted)]">No phrases for this lesson yet.</Card>
-        ) : (
-          <div className="space-y-4">
-            {phrases.map((phrase) => (
-              <PhrasePracticeCard
-                key={phrase.id}
-                phrase={phrase}
-                progress={phraseProgress.get(phrase.id) ?? null}
-                paths={path}
-                showAudioRow
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="mt-10 space-y-4">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-[var(--color-ink)]">Guided practice</h2>
-          <p className="text-sm text-[var(--color-ink-muted)]">
-            Follow these steps in order. Keep a calm pace and focus on pronunciation clarity.
-          </p>
-        </div>
-        {listenActs.length > 0 ? (
-          <Card className="space-y-4">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">Step 1 · Listen</p>
-              <p className="mt-1 text-sm text-[var(--color-ink)]">Listen once, then repeat slowly.</p>
-            </div>
-            <AudioPlaceholderBar label="Lesson audio overview" />
-            {listenActs.map((a) => (
-              <ActivityRenderer key={a.id} activity={a} showSkillBadge={false} />
-            ))}
-          </Card>
-        ) : null}
-        {otherActs.length > 0 ? (
-          <div className="space-y-4">
-            {otherActs.map((a, index) => (
-              <div key={a.id} className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
-                    Step {listenActs.length > 0 ? index + 2 : index + 1}
-                    {" · "}
-                    {skillSection(a.skill)}
-                  </p>
-                  <p className="text-xs text-[var(--color-ink-muted)]">{a.skill}</p>
-                </div>
-                <ActivityRenderer activity={a} showSkillBadge={false} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <Card className="text-sm text-[var(--color-ink-muted)]">No guided activities for this lesson yet.</Card>
-        )}
-      </section>
-
-      <section className="mt-10">
-        <LessonStickyFooter
-          lessonId={lesson.id}
-          paths={{ ...path, lessonId: lesson.id }}
-          alreadyCompleted={alreadyCompleted}
-          phraseCount={phrases.length}
-          activityCount={activities.length}
-          nextLessonHref={nextLessonHref}
-          nextLessonTitle={nextLesson?.title}
-        />
-      </section>
+      <LessonPracticeClient
+        phrases={phrases}
+        phraseProgressById={phraseProgressById}
+        paths={{ ...path, lessonId: lesson.id }}
+        listenActs={listenActs}
+        otherActs={otherActs}
+        lessonId={lesson.id}
+        alreadyCompleted={alreadyCompleted}
+        phraseCount={phrases.length}
+        activityCount={activities.length}
+        nextLessonHref={nextLessonHref}
+        nextLessonTitle={nextLesson?.title}
+      />
     </main>
   );
 }
