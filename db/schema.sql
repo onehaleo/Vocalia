@@ -122,12 +122,12 @@ create table if not exists public.phrases (
   syllable_breakdown text,
   pronunciation_notes text,
   common_mistakes text,
-  tags text[] default '{}',
+  tags text[] not null default '{}',
   audio_url text,
   audio_slow_url text,
   audio_natural_url text,
   audio_context_url text,
-  sort_order integer not null,
+  sort_order integer not null default 1,
   created_at timestamptz not null default now()
 );
 
@@ -171,11 +171,31 @@ create table if not exists public.user_phrase_progress (
   status text not null default 'new',
   practice_count integer not null default 0,
   is_saved boolean not null default false,
-  speaking_confidence smallint,
+  speaking_confidence integer,
   last_practiced_at timestamptz,
   updated_at timestamptz not null default now(),
   unique (user_id, phrase_id)
 );
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint c
+    join pg_class t on c.conrelid = t.oid
+    join pg_namespace n on t.relnamespace = n.oid
+    where n.nspname = 'public'
+      and t.relname = 'user_phrase_progress'
+      and c.conname = 'user_phrase_progress_speaking_confidence_range'
+  ) then
+    alter table public.user_phrase_progress
+      add constraint user_phrase_progress_speaking_confidence_range
+      check (
+        speaking_confidence is null
+        or (speaking_confidence >= 1 and speaking_confidence <= 5)
+      );
+  end if;
+end $$;
 
 create table if not exists public.user_activity_attempts (
   id uuid primary key default gen_random_uuid(),

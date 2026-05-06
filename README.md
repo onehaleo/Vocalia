@@ -297,7 +297,7 @@ Authoritative DDL lives in **`db/schema.sql`**. Learning catalog and progress:
 - **A2 / B1 / B2** — placeholder **`modules`** with **`coming_soon = true`**.
 - **`sound_lessons`** — eight European Portuguese topics (nasal vowels, final -s, unstressed vowels, open/closed vowels, R, lh/nh, stress, rhythm).
 
-Re-run in the Supabase SQL Editor after regenerating. **Warning:** aggressive `DELETE`s remove learner progress in dev — use migrations or a softer seed for production.
+Re-run in the Supabase SQL Editor after regenerating. **Warning:** aggressive `DELETE`s remove learner progress in dev — use migrations or a softer seed for production. `db/seed.sql` is destructive and should be run carefully in production.
 
 ### Troubleshooting: “No course found. Run db/seed.sql in Supabase.”
 
