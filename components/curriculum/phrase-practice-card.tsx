@@ -32,6 +32,7 @@ export function PhrasePracticeCard({
   showAudioRow?: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function run(action: () => Promise<void>) {
@@ -84,26 +85,6 @@ export function PhrasePracticeCard({
         ) : null}
       </div>
 
-      {phrase.pronunciation_notes ? (
-        <p className="text-sm text-[var(--color-ink)]">
-          <span className="font-medium">Notes: </span>
-          {phrase.pronunciation_notes}
-        </p>
-      ) : null}
-      {phrase.common_mistakes ? (
-        <p className="text-sm text-[var(--color-ink-muted)]">
-          <span className="font-medium text-[var(--color-ink)]">Common mistake: </span>
-          {phrase.common_mistakes}
-        </p>
-      ) : null}
-
-      {phrase.tags && phrase.tags.length > 0 ? (
-        <p className="text-xs text-[var(--color-ink-muted)]">
-          <span className="font-medium text-[var(--color-ink)]">Tags: </span>
-          {phrase.tags.join(", ")}
-        </p>
-      ) : null}
-
       {phrase.audio_url ? (
         <audio controls className="w-full" preload="none">
           <source src={phrase.audio_url} />
@@ -122,7 +103,7 @@ export function PhrasePracticeCard({
         <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
           Review confidence
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Button
             type="button"
             variant="secondary"
@@ -142,6 +123,7 @@ export function PhrasePracticeCard({
           <Button
             type="button"
             variant="primary"
+            className="sm:col-span-2"
             disabled={pending}
             onClick={() => run(() => markPhraseMastered(phrase.id, paths))}
           >
@@ -158,25 +140,59 @@ export function PhrasePracticeCard({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
-          Speaking self-check (1–5)
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <Button
-              key={n}
-              type="button"
-              variant={progress?.speaking_confidence === n ? "primary" : "secondary"}
-              disabled={pending}
-              onClick={() => run(() => setPhraseSpeakingConfidence(phrase.id, n, paths))}
-            >
-              {n}
-            </Button>
-          ))}
+      {(phrase.pronunciation_notes || phrase.common_mistakes || (phrase.tags && phrase.tags.length > 0) || progress?.speaking_confidence) ? (
+        <div className="border-t border-black/[0.06] pt-3">
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-auto w-full justify-start px-0 py-0 text-sm text-[var(--color-accent)]"
+            onClick={() => setDetailsOpen((v) => !v)}
+          >
+            {detailsOpen ? "Hide pronunciation details" : "Show pronunciation details"}
+          </Button>
+          {detailsOpen ? (
+            <div className="mt-3 space-y-3">
+              {phrase.pronunciation_notes ? (
+                <p className="text-sm text-[var(--color-ink)]">
+                  <span className="font-medium">Notes: </span>
+                  {phrase.pronunciation_notes}
+                </p>
+              ) : null}
+              {phrase.common_mistakes ? (
+                <p className="text-sm text-[var(--color-ink-muted)]">
+                  <span className="font-medium text-[var(--color-ink)]">Common mistake: </span>
+                  {phrase.common_mistakes}
+                </p>
+              ) : null}
+              {phrase.tags && phrase.tags.length > 0 ? (
+                <p className="text-xs text-[var(--color-ink-muted)]">
+                  <span className="font-medium text-[var(--color-ink)]">Tags: </span>
+                  {phrase.tags.join(", ")}
+                </p>
+              ) : null}
+              <div className="space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
+                  Speaking self-check (1–5)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Button
+                      key={n}
+                      type="button"
+                      variant={progress?.speaking_confidence === n ? "primary" : "secondary"}
+                      disabled={pending}
+                      onClick={() => run(() => setPhraseSpeakingConfidence(phrase.id, n, paths))}
+                    >
+                      {n}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-[var(--color-ink-muted)]">Optional — stored for your review queue only.</p>
+              </div>
+            </div>
+          ) : null}
         </div>
-        <p className="text-xs text-[var(--color-ink-muted)]">Optional — stored for your review queue only.</p>
-      </div>
+      ) : null}
     </Card>
   );
 }

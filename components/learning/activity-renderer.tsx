@@ -17,7 +17,13 @@ function norm(s: string) {
     .replace(/[.,!?;:]$/g, "");
 }
 
-export function ActivityRenderer({ activity }: { activity: ActivityRow }) {
+export function ActivityRenderer({
+  activity,
+  showSkillBadge = true,
+}: {
+  activity: ActivityRow;
+  showSkillBadge?: boolean;
+}) {
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -85,9 +91,11 @@ export function ActivityRenderer({ activity }: { activity: ActivityRow }) {
     <Card className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-base font-semibold text-[var(--color-ink)]">{activity.title}</h3>
-        <span className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
-          {activity.skill}
-        </span>
+        {showSkillBadge ? (
+          <span className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
+            {activity.skill}
+          </span>
+        ) : null}
       </div>
       {body}
       {msg ? (
