@@ -56,7 +56,7 @@ export function ActivityRenderer({
         <div className="space-y-3">
           <AudioPlaceholderBar label={typeof cfg.label === "string" ? cfg.label : undefined} />
           <p className="text-xs text-[var(--color-ink-muted)]">
-            Audio files are not wired yet — buttons stay disabled until you add URLs in the catalog.
+            Audio is coming soon. For now, read the phrase aloud and compare it to the phonetic guide.
           </p>
         </div>
       );
